@@ -47,3 +47,7 @@ matrix Matrix::addition(matrix A, matrix B) {
     }
     return C;
 }
+
+Matrix Matrix::inverse(matrix A) {
+    
+}

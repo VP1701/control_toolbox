@@ -25,6 +25,7 @@ class Matrix {
         void print(matrix A);
         matrix multiply(matrix A, matrix B);
         matrix addition(matrix A, matrix B);
+        matrix inverse(matrix A);
 };
 
 inline matrix operator*(const matrix& A, const matrix& B) {
