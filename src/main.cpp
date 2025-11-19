@@ -35,7 +35,11 @@ int main() {
 
     std::cout << " A + B = D: " << "\n";
     mops.print(D);
+    
     std::cout << "test " << 2*3 << "\n";
+    int n = 2;
+    matrix F = mops.eye(n);
+    mops.print(F);
 
     delete[] A.data;
     delete[] C.data;

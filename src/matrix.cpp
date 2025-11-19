@@ -1,8 +1,27 @@
 // matrix.cpp
 #include "matrix.h"
 
+//matrix Matrix::swap_rows(matrix A, int a, int b) {
+
+//}
 
 
+matrix Matrix::eye(int n) {
+    matrix M;
+    M.rows = n;
+    M.columns = n;
+    M.data = new double[M.rows * M.columns];
+    for (int i = 0; i < M.rows; ++i) {
+        for (int j = 0; j < M.columns; ++j) {
+            if (i==j) {
+                M(i,j)=1.0;
+            } else{
+                M(i,j)=0.0;
+            }
+        }
+    }
+    return M;
+}
 matrix Matrix::zeros(int r, int c) {
     matrix m;
     m.rows = r;
@@ -48,6 +67,11 @@ matrix Matrix::addition(matrix A, matrix B) {
     return C;
 }
 
-Matrix Matrix::inverse(matrix A) {
-    
+matrix Matrix::inverse(matrix A) {
+    if (A.rows != A.columns) {
+        std::cout << "Not a square matrix, cannot invert." << "\n";
+    }
+
+    // implement with gauys-Jordan elimination
+    return A;
 }

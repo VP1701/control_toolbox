@@ -20,7 +20,15 @@ struct matrix {
 
 class Matrix {
     public:
+        // elementary row operations
+        //matrix swap_rows(matrix A, int a, int b);
+        //matrix multiply_row(matrix A, int a);
+        //matrix add_multiple_of_row(matrix A, int a, int b);
 
+
+
+
+        matrix eye(int n);
         matrix zeros(int r, int c);
         void print(matrix A);
         matrix multiply(matrix A, matrix B);
