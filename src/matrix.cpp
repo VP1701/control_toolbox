@@ -132,7 +132,7 @@ matrix Matrix::inverse(const matrix& A) {
         augmented = multiply_row(augmented, p, 1.0 / pivot);
 
         // ELiminate column p from other rows
-        for (int i = 0; 1 < n; ++i) {
+        for (int i = 0; i < n; ++i) {
             if (i != p) {
                 double factor = augmented(i, p);
 
