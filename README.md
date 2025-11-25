@@ -4,11 +4,13 @@ This is my hobby repository for doing control theory related C++ scripts and/or 
 
 
 
-
+## done
+- Discrete PID-controller class that includes different version depending on the chosen discretization method.
+    includes antiwindup if chosen
 
 ## Currently working on
-- Discrete PID-controller class that includes different version depending on the chosen discretization method.
-    - This will also include antiwindup id chosen
+- extending matrix class
+- start working on vector class
 
 ## future plans
 -State feedback controller
