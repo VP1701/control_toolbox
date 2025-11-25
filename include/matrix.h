@@ -21,19 +21,19 @@ struct matrix {
 class Matrix {
     public:
         // elementary row operations
-        //matrix swap_rows(matrix A, int a, int b);
-        //matrix multiply_row(matrix A, int a);
-        //matrix add_multiple_of_row(matrix A, int a, int b);
+        matrix swap_rows(matrix& A, int row1, int row2);
+        matrix multiply_row(matrix& A, int row, double scalar);
+        matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
 
 
 
 
         matrix eye(int n);
         matrix zeros(int r, int c);
-        void print(matrix A);
-        matrix multiply(matrix A, matrix B);
-        matrix addition(matrix A, matrix B);
-        matrix inverse(matrix A);
+        void print(const matrix& A);
+        matrix multiply(const matrix& A, const matrix& B);
+        matrix addition(const matrix& A, const matrix& B);
+        matrix inverse(const matrix& A);
 };
 
 inline matrix operator*(const matrix& A, const matrix& B) {
