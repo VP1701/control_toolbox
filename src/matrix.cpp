@@ -89,6 +89,16 @@ matrix Matrix::addition(const matrix& A, const matrix& B) {
     return C;
 }
 
+matrix Matrix::subtraction(const matrix& A, const matrix& B) {
+    matrix C = zeros(A.rows, A.columns);
+    for (int i = 0; i < A.rows; i++) {
+        for (int j = 0; j < A.columns; j++) {
+            C(i,j) = A(i,j) - B(i,j);
+        }
+    }
+    return C;
+}
+
 matrix Matrix::inverse(const matrix& A) {
     int n = A.rows;
     if (A.rows != A.columns) {

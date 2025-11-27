@@ -33,6 +33,7 @@ class Matrix {
         void print(const matrix& A);
         matrix multiply(const matrix& A, const matrix& B);
         matrix addition(const matrix& A, const matrix& B);
+        matrix subtraction(const matrix& A, const matrix& B);
         matrix inverse(const matrix& A);
 };
 
@@ -44,5 +45,10 @@ inline matrix operator*(const matrix& A, const matrix& B) {
 inline matrix operator+(const matrix& A, const matrix& B) {
     Matrix mops;
     return mops.addition(A, B);
+}
+
+inline matrix operator-(const matrix& A, const matrix& B) {
+    Matrix mops;
+    return mops.subtraction(A, B);
 }
 #endif // MATRIX_H
