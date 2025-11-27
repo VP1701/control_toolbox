@@ -7,21 +7,34 @@
 #include <matrix.h>
 #include <vector>
 
-class simplex {
+class Simplex {
     private:
-        int constraints;
-        int variables;
+        int m; // amount of constraints
+        int n; // amount of variables
 
         std::vector<int> basis;
 
         matrix A;
         matrix b;
         matrix c_trans;
+        matrix A_big;
+        matrix c_trans_big;
+        std::vector<int> artificial_indices;
+
+        double M = 1e9; // Big-M value
 
         Matrix mops;
 
+        // functions
+
+        matrix Simplex::get_basis() const;
+
+
+
     public:
-        Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_in)
+        Simplex::simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_in);
+
+        void solve();
 
 
 }
