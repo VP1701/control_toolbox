@@ -35,6 +35,7 @@ class Matrix {
         matrix addition(const matrix& A, const matrix& B);
         matrix subtraction(const matrix& A, const matrix& B);
         matrix inverse(const matrix& A);
+        matrix get_column(const matrix& A, int n);
 };
 
 inline matrix operator*(const matrix& A, const matrix& B) {
