@@ -11,12 +11,12 @@ enum ConstraintType {LEQ, EQ, GEQ};
 
 class Simplex {
     private:
-        int m; // amount of constraints
-        int n; // amount of original svariables
+        int m; // amount of constraints, rows
+        int n; // amount of original svariables, columns
         int n_big; // amount of variables in big-Ms
         int nb;
         int mnrc_idx;
-        int piv_row;
+        int leaving_row;
 
         int n_leq = 0;
         int n_geq = 0;

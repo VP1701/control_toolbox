@@ -74,21 +74,27 @@ void Simplex::solve() {
         //std::cout << "Reduced cost" << "\n";
         mops.print(reduced_cost);
 
-        double mnrc = -1e-12; // most negative reduces cost. start with barely negative value
-        mnrc_idx = -1; // most negative reduces cost index
+        
+        int entering_column = -1; // most negative reduces cost index
 
-        // check if all values in reduced_cost are negative. If they are a solution is found
+        // Bland's rule for choosing enterign variable
+        // picks smallest nonbasic variable index with reduced cost
+        // smaller than zero
+
         for (int i = 0; i < nb; ++i) {
-            double temp = reduced_cost(0, i);
-            if (temp < mnrc) {
-                mnrc = temp;
-                mnrc_idx = i;
+            double rc = reduced_cost(0, i);
+            int col = non_basis_idx[i];
+
+            if (rc < -1e-12) {
+                if (entering_column == -1 || col < entering_column) {
+                    entering_column = col;
+                }
             }
         }
 
 
         // check optimality
-        if (mnrc_idx == -1) {
+        if (entering_column == -1) {
         
             // cheack feasibility
             infeasible = false;
@@ -119,55 +125,43 @@ void Simplex::solve() {
             return;
         }
 
-        int entering_col = non_basis_idx[mnrc_idx];
 
         // Get correct column from A
-        a_j = mops.get_column(A, entering_col);
+        a_j = mops.get_column(A, entering_column);
 
         a_j_hat = B_inv * a_j;
 
-        piv_row = -1;
-        double min_ratio = 1e20;
+        // Bland's rule for leaving variable
+        leaving_row = -1;
+        double min_ratio = 1e300;
 
-        // check witch columns to swap
-        bool degenerate = false;
         for (int i = 0; i < m; ++i) {
-            double div = a_j_hat(i, 0);
-            double x_i = x(basis_idx[i], 0);
-            
-            // degeneracy check
-            /*
-            if some value in x_i is zero or smaller the solution on degenerate
-            in this case we
-            
-            */
-            if (x_i < 1e-10) {  
-                degenerate = true;
-                std::cout << "DEGENERACY DETECTED: basic var x" << basis_idx[i] 
-                        << " = " << x_i << "\n";
-            }
+            double aij = a_j_hat(i,0);
+            if (aij > 1e-10) {
+                double ratio = x(basis_idx[i],0) / aij;
+                int var_idx  = basis_idx[i];
 
-            if (div > 1e-10) {
-                double ratio = x_i / div;
-                if (ratio < min_ratio) {
-                    min_ratio = ratio;
-                    piv_row = i;
+                if (ratio < min_ratio - 1e-12 ||
+                    (std::abs(ratio - min_ratio) < 1e-10 && 
+                    (leaving_row == -1 || var_idx < basis_idx[leaving_row]))) {
+                    min_ratio  = ratio;
+                    leaving_row = i;
                 }
             }
         }
 
-        if (piv_row == -1) {
+        if (leaving_row == -1) {
             std::cout << "Problem is unbounded \n";
             return; 
         }
 
-        int leaving_col = basis_idx[piv_row];
+        int leaving_col = basis_idx[leaving_row];
 
         // update basis indices
-        basis_idx[piv_row] = entering_col;
-        auto it = std::find(non_basis_idx.begin(), non_basis_idx.end(), leaving_col);
+        basis_idx[leaving_row] = entering_column;
+        auto it = std::find(non_basis_idx.begin(), non_basis_idx.end(), entering_column);
         if (it != non_basis_idx.end()) {
-            *it = entering_col;  // replace the leaving one with the entering one
+            *it = leaving_col;  // replace the leaving one with the entering one
         }
     }
 }
@@ -329,10 +323,10 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
 
     if (DEBUG) {
         std::cout << "After slacks and artificial variables \n";
-    std::cout << "A: \n";
-    mops.print(A);
-    std::cout << "c_trans: \n";
-    mops.print(c_trans);
+        std::cout << "A: \n";
+        mops.print(A);
+        std::cout << "c_trans: \n";
+        mops.print(c_trans);
     }
     
 
