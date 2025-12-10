@@ -10,8 +10,9 @@ Inside main.cpp there are test cases for the solver. Last one of them is the sol
 
 For testing the solver you need to clone the repo, have C++ and g++ installed. After that you can run the test with these commands:
 
-you can run it with these commands
+compile code:
 ```g++ -Iinclude src/main.cpp src/simplex.cpp src/matrix.cpp -o test```
+run the code:
 ```./test.exe```
 
 
