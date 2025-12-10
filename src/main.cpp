@@ -1,14 +1,13 @@
 // main.cpp
-// FULL VALIDATION SUITE FOR YOUR SIMPLEX SOLVER
+
 
 #include <iostream>
-#include <vector> // Required for std::vector
+#include <vector> 
 #include "matrix.h"
-#include "simplex.h" // Assumes ConstraintType enum is here
+#include "simplex.h" 
 
-// Define the run_test function to accept the vector of constraint types
 void run_test(const char* name, const matrix& A, const matrix& b, const matrix& c, 
-              const std::vector<ConstraintType>& types) { // ADDED ARGUMENT
+              const std::vector<ConstraintType>& types) {
     std::cout << "\n";
     std::cout << "==================================================\n";
     std::cout << "TEST: " << name << "\n";
@@ -35,7 +34,6 @@ int main() {
         matrix c = mops.zeros(1,2);
         c(0,0)=-1; c(0,1)=-3;
 
-        // Constraint Types: Both are LEQ
         std::vector<ConstraintType> types = {LEQ, LEQ};
 
         run_test("lecture notes", A, b, c, types);
@@ -44,7 +42,7 @@ int main() {
 
     {
         matrix A_inf = mops.zeros(2,2);
-        // Original: x₁ + x₂ ≥ 2 -> Used as -x₁ -x₂ ≤ -2 in the setup
+        
         A_inf(0,0)=1; A_inf(0,1)=1; 
         A_inf(1,0)= 1; A_inf(1,1)= -1; 
 
@@ -90,7 +88,7 @@ int main() {
 
     {
     matrix A = mops.zeros(8,10);
-    // Row-wise filling (values from the seeded rand above)
+    
     double A_data[8][10] = {
         {1.484, 0.937, 2.744, 1.095, 0.632, 2.173, 1.918, 0.049, 2.501, 1.723},
         {0.294, 2.181, 1.639, 0.917, 2.884, 0.425, 1.273, 2.660, 0.167, 1.984},
@@ -121,7 +119,7 @@ int main() {
 
 
     {
-    matrix A = mops.zeros(6, 2);  // 6 rows, 2 variables
+    matrix A = mops.zeros(6, 2);  
     A(0,0)=1;    A(0,1)=1;
     A(1,0)=1;    A(1,1)=0.25;
     A(2,0)=1;    A(2,1)=-1;
@@ -134,14 +132,13 @@ int main() {
     b(1,0)=1;
     b(2,0)=2;
     b(3,0)=1;
-    b(4,0)=-1;   // ← this is ≤ -1 → will be flipped to ≥ 1
+    b(4,0)=-1;   
     b(5,0)=2;
 
     matrix c = mops.zeros(1,2);
     c(0,0)=-1;
     c(0,1)=-1.0/3.0;
 
-    // ALL ARE INEQUALITIES (≤)
     std::vector<ConstraintType> types = {LEQ, LEQ, LEQ, LEQ, LEQ, LEQ};
 
     //run_test("Klee-Minty cube (2D version)", A, b, c, types);
@@ -151,7 +148,6 @@ int main() {
     {
     Matrix mops;
 
-    // 9 variables
     matrix A = mops.zeros(12, 9);
     matrix b = mops.zeros(12, 1);
     matrix c = mops.zeros(1, 9);
