@@ -42,9 +42,12 @@ void Simplex::calculate_current_solution() {
 void Simplex::print_solution() const {
 
     std::cout << "Printing solution to the simplex" << "\n";
-
-
-    mops.print(x);
+    // modify this to remove slacs from the answer
+    matrix xsol = mops.zeros(n,1);
+    for (int i = 0; i < n; ++i) {
+        xsol(i,0) = x(i,0);
+    }
+    mops.print(xsol);
     
     matrix opt = c_trans * x;
     double opt_val = opt(0,0);
@@ -54,7 +57,7 @@ void Simplex::print_solution() const {
 
 void Simplex::solve() {
     // todo
-    std::cout << "Solver started!" << "\n";
+    //std::cout << "Solver started!" << "\n";
     for (int i = 0; i < MAX_ITERATONS; ++i) {
         calculate_current_solution();
 
@@ -72,7 +75,7 @@ void Simplex::solve() {
         //reduced_cost = c_N - c_B*B_inv*N
         matrix reduced_cost = c_N - c_B*B_inv*N;
         //std::cout << "Reduced cost" << "\n";
-        mops.print(reduced_cost);
+        //mops.print(reduced_cost);
 
         
         int entering_column = -1; // most negative reduces cost index
@@ -272,7 +275,7 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     }
 
     for (int j = 0; j < n; ++j) {
-        c_trans_big(0, j) = c_trans_in(0, j);
+        c_trans_big(0, j) = c_trans(0, j);
     }
 
     // add original non absis indices
@@ -338,11 +341,7 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     c_B = mops.zeros(1, m);
     c_N = mops.zeros(1, n_big - m);
     a_j = mops.zeros(m, 1);
-    std::cout << "Simplex initialized" << "\n";
 
     solve();
 
-    //calculate_current_solution();
-    //print_solution();
-    
 }

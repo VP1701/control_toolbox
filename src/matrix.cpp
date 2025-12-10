@@ -100,7 +100,7 @@ matrix Matrix::subtraction(const matrix& A, const matrix& B) {
 }
 
 matrix Matrix::get_column(const matrix& A, int n) {
-    nx = A.rows;
+    int nx = A.rows;
     matrix column = zeros(nx, 1);
     for (int i = 0; i < nx; ++i) {
         column(i,0) = A(i,n);
