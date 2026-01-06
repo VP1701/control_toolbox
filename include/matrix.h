@@ -9,6 +9,41 @@ struct matrix {
     int columns;
     double* data;
 
+    // constructor
+    matrix(int r, int c) : rows(r), columns(c) {
+        data = new double[r * c]();
+    }
+
+    // destructor
+    ~matrix() {
+        delete[] data;
+    }
+
+    // copy contructor
+    matrix(const matrix& other) : rows(other.rows), columns(other-columns) {
+        data = new double[rows * columns];
+        for (int i = 0; i < rows * columns; ++i) {
+            data[i] = other.data[i];
+        }
+    }
+
+    // copy matrix operator
+    matrix& operator=(const matrix& other) {
+        // check if copying self
+        if (this == &other) return *this;
+
+        delete[] data;
+
+        // copy
+        rows = other.rows;
+        columns = other.columns;
+        data = new double[rows * columns];
+        for (int i = 0; i < rows* columns; ++i) {
+            data[i] = other.data[i];
+        }
+
+        return *this;
+    }
     double& operator()(int r, int c) {
         return data[r * columns + c];
     }
