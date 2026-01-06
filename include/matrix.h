@@ -20,7 +20,7 @@ struct matrix {
     }
 
     // copy contructor
-    matrix(const matrix& other) : rows(other.rows), columns(other-columns) {
+    matrix(const matrix& other) : rows(other.rows), columns(other.columns) {
         data = new double[rows * columns];
         for (int i = 0; i < rows * columns; ++i) {
             data[i] = other.data[i];
@@ -43,6 +43,20 @@ struct matrix {
         }
 
         return *this;
+    }
+
+    // matrix transpose
+    matrix transpose() const {
+        matrix result(columns, rows);
+
+        for (int i = 0; i < rows; ++i) {
+            int offset = i * columns;
+            for (int j = 0; j < columns; ++j) {
+                result.data[j * rows + i] = data[offset + j];
+            }
+    }
+
+    return result;
     }
     double& operator()(int r, int c) {
         return data[r * columns + c];
