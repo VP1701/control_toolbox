@@ -177,9 +177,7 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     this->constraint_types = constraint_types_in;
 
     // initialize matrices for optimization
-    A = mops.zeros(m,n);
-    b = mops.zeros(m,1);
-    c_trans = mops.zeros(1,n);
+    
 
     // check that inputs have valid dimensions
     if (b_in.rows != m) {
@@ -201,22 +199,10 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     // copy data from input matrices
     // REDO after implementing matrix struct in a smarter way
 
-    // copy A_in data to A
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < n; ++j) {
-            A(i,j) = A_in(i,j);
-        }
-    }
-    
-    // copy b_in data to b
-    for (int i = 0; i < m; ++i) {
-        b(i,0) = b_in(i,0);
-    }
-    
-    // copy c_trans_in data to c_trans
-    for (int i = 0; i < n; ++i) {
-        c_trans(0,i) = c_trans_in(0,i);
-    }
+    // copy input matrices
+    A = A_in;
+    b = B_in;
+    c_trans = c_trans_in;
     
 
 
@@ -230,6 +216,7 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
         std::cout << "c_trans: \n";
         mops.print(c_trans);
     }
+
     // make sure that elements of b are non negative
     for (int i = 0; i < m; ++i) {
         if (b(i,0) < 0.0) {
@@ -264,8 +251,8 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     // construct big-M matrices
 
     n_big = n + n_leq + n_eq + 2 * n_geq; 
-    A_big = mops.zeros(m, n_big);
-    c_trans_big = mops.zeros(1, n_big);
+    matrix A_big(m, n_big);
+    matrix c_big(1,n_big);
 
     // copy A into left side of A_big
     for (int i = 0; i < m; ++i) {
@@ -335,12 +322,12 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
 
     nb = n_big - m;
 
-    B = mops.zeros(m, m);
-    N = mops.zeros(m, n_big - m);
-    x = mops.zeros(n_big, 1);
-    c_B = mops.zeros(1, m);
-    c_N = mops.zeros(1, n_big - m);
-    a_j = mops.zeros(m, 1);
+    B = matrix(m, m);
+    N = matrix(m, n_big - m);
+    x = matrix(n_big, 1);
+    c_B = matrix(1, m);
+    c_N = matrix(1, n_big - m);
+    a_j = matrix(m, 1);
 
     solve();
 

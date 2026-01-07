@@ -54,10 +54,23 @@ struct matrix {
             for (int j = 0; j < columns; ++j) {
                 result.data[j * rows + i] = data[offset + j];
             }
+        }
+        return result;
     }
 
-    return result;
+    // set block of matrix to some matrix
+    void set_block(int start_row, int start_column, const matrix& A) {
+        if (start_row < 0 || start_column < 0 || start_row + A.rows > rows || start_column + A.columns > columns) {
+            std::cout << "Impossible substitution! Check your dimesnsion!" << "\n";
+        }
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+
+                data[start_row * columns + start_column + i * columns + j] = A.data[i * A.columns + j];
+            }
+        }
     }
+
     double& operator()(int r, int c) {
         return data[r * columns + c];
     }
@@ -65,6 +78,19 @@ struct matrix {
     double operator()(int r, int c) const {
         return data[r * columns + c];
     }
+
+    matrix operator * (const matrix& B) {
+        matrix result(rows, B.columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < B.columns; j++)  {
+                for (int k = 0; k < columns; k++) {
+                    result.data[i * result.columns + j] += data[i * columns + k] * B.data[j * B.rows + k];
+                }
+            }
+        }
+        return result;
+    }
+
 };
 
 class Matrix {

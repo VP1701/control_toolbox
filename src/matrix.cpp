@@ -28,10 +28,7 @@ matrix Matrix::add_multiple_of_row(matrix& A, int dest, int src, double scalar) 
 }
 
 matrix Matrix::eye(int n) {
-    matrix M;
-    M.rows = n;
-    M.columns = n;
-    M.data = new double[M.rows * M.columns];
+    matrix M(n, n);
     for (int i = 0; i < M.rows; ++i) {
         for (int j = 0; j < M.columns; ++j) {
             if (i==j) {
@@ -67,7 +64,7 @@ void Matrix::print(const matrix& A)  {
 }
 
 matrix Matrix::multiply(const matrix& A, const matrix& B) {
-    matrix C = zeros(A.rows, B.columns);
+    matrix C(A.rows, B.columns);
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < B.columns; j++)  {
             for (int k = 0; k < A.columns; k++) {
@@ -80,7 +77,7 @@ matrix Matrix::multiply(const matrix& A, const matrix& B) {
 
 
 matrix Matrix::addition(const matrix& A, const matrix& B) {
-    matrix C = zeros(A.rows, A.columns);
+    matrix C(A.rows, A.columns);
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < A.columns; j++) {
             C(i,j) = A(i,j) + B(i,j);
@@ -90,7 +87,7 @@ matrix Matrix::addition(const matrix& A, const matrix& B) {
 }
 
 matrix Matrix::subtraction(const matrix& A, const matrix& B) {
-    matrix C = zeros(A.rows, A.columns);
+    matrix C(A.rows, A.columns);
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < A.columns; j++) {
             C(i,j) = A(i,j) - B(i,j);
@@ -171,4 +168,6 @@ matrix Matrix::inverse(const matrix& A) {
 
     // implement with gauys-Jordan elimination
     return inverted_A;
+
 }
+
