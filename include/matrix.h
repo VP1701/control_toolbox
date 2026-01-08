@@ -46,7 +46,7 @@ struct matrix {
     }
 
     // matrix transpose
-    matrix transpose() const {
+    matrix T() const {
         matrix result(columns, rows);
 
         for (int i = 0; i < rows; ++i) {
@@ -62,9 +62,10 @@ struct matrix {
     void set_block(int start_row, int start_column, const matrix& A) {
         if (start_row < 0 || start_column < 0 || start_row + A.rows > rows || start_column + A.columns > columns) {
             std::cout << "Impossible substitution! Check your dimesnsion!" << "\n";
+            return;
         }
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < columns; ++j) {
+        for (int i = 0; i < A.rows; ++i) {
+            for (int j = 0; j < A.columns; ++j) {
 
                 data[start_row * columns + start_column + i * columns + j] = A.data[i * A.columns + j];
             }
@@ -84,12 +85,13 @@ struct matrix {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < B.columns; j++)  {
                 for (int k = 0; k < columns; k++) {
-                    result.data[i * result.columns + j] += data[i * columns + k] * B.data[j * B.rows + k];
+                    result.data[i * result.columns + j] += data[i * columns + k] * B.data[k * B.columns + j];
                 }
             }
         }
         return result;
     }
+
 
 };
 
@@ -99,9 +101,6 @@ class Matrix {
         matrix swap_rows(matrix& A, int row1, int row2);
         matrix multiply_row(matrix& A, int row, double scalar);
         matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
-
-
-
 
         matrix eye(int n);
         matrix zeros(int r, int c);

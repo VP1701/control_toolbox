@@ -42,10 +42,7 @@ matrix Matrix::eye(int n) {
 }
 
 matrix Matrix::zeros(int r, int c) {
-    matrix m;
-    m.rows = r;
-    m.columns = c;
-    m.data = new double[m.rows * m.columns];
+    matrix m(r, c);
 
     for (int i = 0; i < m.rows * m.columns; i++) {
         m.data[i] = 0.0;
