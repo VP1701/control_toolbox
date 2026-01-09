@@ -58,11 +58,48 @@ struct matrix {
         return result;
     }
 
+    matrix LU() const {
+        matrix L(rows, columns);
+        matrix U(rows, columns);
+    }
+
+    matrix& swap_rows(int row_ind1, int row_ind2) {
+        // Check that indices are different
+        if (row_ind1 == row_ind2) return *this;
+        
+        for (int i = 0; i < columns; ++i) {
+            std::swap(data[row_ind1 * columns + i], data[row_ind2 * columns + i]);
+        }
+        return *this;
+    }
+
+    matrix& multiply_row(int row_ind, double scalar) {
+        if (scalar == 0.0) {
+        std::cout << "Error: multiplying row by zero!" << "\n";
+        }
+        for (int i = 0; i < columns; ++i) {
+            data[row_ind * columns + i] = data[row_ind * columns + i] * scalar;
+        }
+        return *this;
+    }
+
+    matrix& add_multiple_of_row(int dest_row, int src_row, double scalar) {
+        if (scalar == 0.0) {
+        std::cout << "Error: multiplying row by zero!" << "\n";
+        return *this;
+        }
+        for (int i = 0; i < columns; ++i) {
+            data[dest_row * columns + i] += data[src_row * columns + i] * scalar;
+        }
+
+        return *this;
+    }
+
     // set block of matrix to some matrix
-    void set_block(int start_row, int start_column, const matrix& A) {
+    matrix& set_block(int start_row, int start_column, const matrix& A) {
         if (start_row < 0 || start_column < 0 || start_row + A.rows > rows || start_column + A.columns > columns) {
             std::cout << "Impossible substitution! Check your dimesnsion!" << "\n";
-            return;
+            return *this;
         }
         for (int i = 0; i < A.rows; ++i) {
             for (int j = 0; j < A.columns; ++j) {
@@ -70,6 +107,7 @@ struct matrix {
                 data[start_row * columns + start_column + i * columns + j] = A.data[i * A.columns + j];
             }
         }
+        return *this;
     }
 
     double& operator()(int r, int c) {
@@ -91,8 +129,6 @@ struct matrix {
         }
         return result;
     }
-
-
 };
 
 class Matrix {
