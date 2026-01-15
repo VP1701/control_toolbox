@@ -58,9 +58,30 @@ struct matrix {
         return result;
     }
 
+    
+
     matrix LU() const {
-        matrix L(rows, columns);
-        matrix U(rows, columns);
+        matrix LU = *this;
+        matrix P = Matrix.eye(columns);
+
+        for (int i = 0; i < columns; ++i) {
+            int max_val_row = i;
+            double max_val = std::abs(data[max_val_row * columns + i]);
+            for (int j = i + 1; j < rows; ++j) {
+                double val = std::abs(data[j * columns + i]);
+                if (val>max_val) {
+                    max_val = val;
+                    max_val_row = i;
+                }
+            } 
+            
+            // check singularity
+            if (std::abs(data[max_val_row * columns + i]) < 1e-12) {
+                std::cout << "Matrix is singular. cannot LU decompose" << "\n";
+            }
+
+            LU.swap_rows(i, max_val_row);
+        }
     }
 
     matrix& swap_rows(int row_ind1, int row_ind2) {
