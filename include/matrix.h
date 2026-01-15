@@ -9,6 +9,8 @@ struct matrix {
     int columns;
     double* data;
 
+    matrix() : rows(0), columns(0), data(nullptr) {}
+
     // constructor
     matrix(int r, int c) : rows(r), columns(c) {
         data = new double[r * c]();
