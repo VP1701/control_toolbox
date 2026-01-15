@@ -62,7 +62,7 @@ struct matrix {
 
     matrix LU() const {
         matrix LU = *this;
-        matrix P = Matrix.eye(columns);
+        //matrix P = Matrix.eye(columns);
 
         for (int i = 0; i < columns; ++i) {
             int max_val_row = i;
@@ -82,6 +82,8 @@ struct matrix {
 
             LU.swap_rows(i, max_val_row);
         }
+
+        return LU;
     }
 
     matrix& swap_rows(int row_ind1, int row_ind2) {

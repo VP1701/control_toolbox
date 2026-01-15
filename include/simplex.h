@@ -49,7 +49,7 @@ class Simplex {
         std::vector<ConstraintType> constraint_types;
 
         mutable Matrix mops;
-        const int MAX_ITERATONS = 1000;
+        const int MAX_ITERATIONS = 1000;
         // functions
 
         void get_basis();

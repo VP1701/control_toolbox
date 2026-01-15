@@ -58,7 +58,7 @@ void Simplex::print_solution() const {
 void Simplex::solve() {
     // todo
     //std::cout << "Solver started!" << "\n";
-    for (int i = 0; i < MAX_ITERATONS; ++i) {
+    for (int i = 0; i < MAX_ITERATIONS; ++i) {
         calculate_current_solution();
 
         for (int i = 0; i < m; ++i) {
@@ -201,7 +201,7 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
 
     // copy input matrices
     A = A_in;
-    b = B_in;
+    b = b_in;
     c_trans = c_trans_in;
     
 
@@ -252,7 +252,7 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
 
     n_big = n + n_leq + n_eq + 2 * n_geq; 
     matrix A_big(m, n_big);
-    matrix c_big(1,n_big);
+    matrix c_trans_big(1,n_big);
 
     // copy A into left side of A_big
     for (int i = 0; i < m; ++i) {
