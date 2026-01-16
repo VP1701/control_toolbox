@@ -329,6 +329,11 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     c_N = matrix(1, n_big - m);
     a_j = matrix(m, 1);
 
+    typedef std::chrono::high_resolution_clock Clock;
+    auto t1 = Clock::now();
     solve();
+    auto t2 = Clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1);
+    std::cout << "time used for solving LP: " << ms.count() << " ms\n";
 
 }

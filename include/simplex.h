@@ -4,6 +4,7 @@
 #define SIMPLEX_H
 
 #include <iostream>
+#include <chrono>
 #include <matrix.h>
 #include <vector>
 
