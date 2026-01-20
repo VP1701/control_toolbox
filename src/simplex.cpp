@@ -46,8 +46,9 @@ void Simplex::print_solution() const {
     matrix xsol = mops.zeros(n,1);
     for (int i = 0; i < n; ++i) {
         xsol(i,0) = x(i,0);
+        std::cout << "x_" << i << " = " << x(i,0) << "\n";
     }
-    mops.print(xsol);
+    //mops.print(xsol);
     
     matrix opt = c_trans * x;
     double opt_val = opt(0,0);
