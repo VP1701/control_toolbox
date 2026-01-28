@@ -21,8 +21,6 @@ void Simplex::get_basis() {
             N(j,i) = A(j, A_col);
         }
     }
-
-
 }
 
 void Simplex::calculate_current_solution() {
@@ -31,21 +29,23 @@ void Simplex::calculate_current_solution() {
     get_basis();
     B_inv = mops.inverse(B);
     matrix xB = B_inv * b;
-    x = mops.zeros(n_big,1);
+    //x = matrix(n_big,1);
+    //x = mops.zeros(n_big,1);
     for (int i = 0; i < m; ++i) {
         int idx = basis_idx[i];
         x(idx, 0) = xB(i, 0);
     }
-
 }
 
 void Simplex::print_solution() const {
 
     std::cout << "Printing solution to the simplex" << "\n";
     // modify this to remove slacs from the answer
-    matrix xsol = mops.zeros(n,1);
+    //xsol = matrix(n,1);
+
+    std::cout << "solution 2" << "`\n";
     for (int i = 0; i < n; ++i) {
-        xsol(i,0) = x(i,0);
+        //xsol(i,0) = x(i,0);
         std::cout << "x_" << i << " = " << x(i,0) << "\n";
     }
     //mops.print(xsol);
@@ -54,6 +54,20 @@ void Simplex::print_solution() const {
     double opt_val = opt(0,0);
     std::cout << "Optimal value: " << opt_val <<"\n";
     //mops.print(opt);
+}
+
+matrix Simplex::return_solution() const {
+    matrix sol(n,1);
+    for (int i = 0; i < n; ++i) {
+        sol(i,0) = x(i,0);
+    }
+    return sol;
+}
+
+double Simplex::return_opt_cost() const {
+    matrix opt = c_trans * x;
+    double opt_val = opt(0,0);
+    return opt_val;
 }
 
 void Simplex::solve() {
@@ -71,14 +85,8 @@ void Simplex::solve() {
             c_N(0,i) = c_trans(0, non_basis_idx[i]);
         }
 
-        
-
-        //reduced_cost = c_N - c_B*B_inv*N
         matrix reduced_cost = c_N - c_B*B_inv*N;
-        //std::cout << "Reduced cost" << "\n";
-        //mops.print(reduced_cost);
 
-        
         int entering_column = -1; // most negative reduces cost index
 
         // Bland's rule for choosing enterign variable
@@ -95,7 +103,6 @@ void Simplex::solve() {
                 }
             }
         }
-
 
         // check optimality
         if (entering_column == -1) {
@@ -128,7 +135,6 @@ void Simplex::solve() {
             }
             return;
         }
-
 
         // Get correct column from A
         a_j = mops.get_column(A, entering_column);
@@ -177,9 +183,6 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     this->n = A_in.columns;
     this->constraint_types = constraint_types_in;
 
-    // initialize matrices for optimization
-    
-
     // check that inputs have valid dimensions
     if (b_in.rows != m) {
         std::cout << "Invalid size of A or b. different amount of rows" << "\n";
@@ -197,17 +200,11 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
         std::cout << "Invalid amount of columns in A or c_trans! Must ahve same amount of columns!" << "\n";
     }
 
-    // copy data from input matrices
-    // REDO after implementing matrix struct in a smarter way
-
     // copy input matrices
     A = A_in;
     b = b_in;
     c_trans = c_trans_in;
     
-
-
-
     if (DEBUG) {
         std::cout << "After copying inputs \n"; 
         std::cout << "A: \n";
@@ -320,7 +317,6 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
         mops.print(c_trans);
     }
     
-
     nb = n_big - m;
 
     B = matrix(m, m);
@@ -330,11 +326,11 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     c_N = matrix(1, n_big - m);
     a_j = matrix(m, 1);
 
-    typedef std::chrono::high_resolution_clock Clock;
-    auto t1 = Clock::now();
-    solve();
-    auto t2 = Clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1);
-    std::cout << "time used for solving LP: " << ms.count() << " ms\n";
+    //typedef std::chrono::high_resolution_clock Clock;
+    //auto t1 = Clock::now();
+    //solve();
+    //auto t2 = Clock::now();
+    //auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1);
+    //std::cout << "time used for solving LP: " << ms.count() << " ms\n";
 
 }
