@@ -154,6 +154,36 @@ struct matrix {
         }
         return result;
     }
+
+    // trick to make scalar multiplication work. but need to always m,ultiply from the right :(
+
+    matrix operator * (double scalar) const {
+        matrix result(rows, columns);
+        for (int i = 0; i < rows * columns; ++i) {
+            result.data[i] = data[i] * scalar;
+        }
+        return result;
+    }
+
+    matrix operator + (const matrix& B) {
+        matrix result(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                result.data[i * columns + j] = data[i * columns + j] + B.data[i * columns + j];
+            }
+        }
+        return result;
+    }
+
+    matrix operator - (const matrix& B) {
+        matrix result(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                result.data[i * columns + j] = data[i * columns + j] - B.data[i * columns + j];
+            }
+        }
+        return result;
+    }
 };
 
 class Matrix {
@@ -163,8 +193,14 @@ class Matrix {
         matrix multiply_row(matrix& A, int row, double scalar);
         matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
 
+        // functions for creating matrices
+        matrix lower_toeplitz_I(int T_size, int block_size);
+        matrix diag(const matrix& A);
         matrix eye(int n);
         matrix zeros(int r, int c);
+        matrix ones(int r, int c);
+
+
         void print(const matrix& A);
         matrix multiply(const matrix& A, const matrix& B);
         matrix addition(const matrix& A, const matrix& B);

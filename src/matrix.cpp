@@ -41,11 +41,50 @@ matrix Matrix::eye(int n) {
     return M;
 }
 
+matrix Matrix::lower_toeplitz_I(int T_size, int block_size) {
+    
+
+    matrix I = eye(block_size);
+    matrix T(T_size,T_size);
+    
+    // make C_uId into toeplitz matrix which is a lower block triangular matrix where blocks are I
+    for (int i = 0; i < T_size; i += block_size) {
+        for (int j = (i / block_size) * block_size; j >= 0; j -= block_size) {
+            T.set_block(i, j, I);
+        }
+    }
+
+    return T;
+}
+
+matrix Matrix::diag(const matrix& A) {
+    // returns diagonal elements of a square matrix
+    int rows = A.rows;
+    int columns = A.columns;
+    matrix diag(rows,1); // columns vector to store diagonal elements
+
+    for(int i = 0; i < A.rows; ++i) {
+        diag(i,0) = A.data[i * columns + i];
+    }
+    return diag;
+}
+
+
 matrix Matrix::zeros(int r, int c) {
     matrix m(r, c);
 
     for (int i = 0; i < m.rows * m.columns; i++) {
         m.data[i] = 0.0;
+    }
+
+    return m;
+};
+
+matrix Matrix::ones(int r, int c) {
+    matrix m(r, c);
+
+    for (int i = 0; i < m.rows * m.columns; i++) {
+        m.data[i] = 1.0;
     }
 
     return m;

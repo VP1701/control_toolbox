@@ -129,10 +129,11 @@ void Simplex::solve() {
 
             if (infeasible) {
                 std::cout << "Problem is infeasible \n";
-            } else {
+            } /*else {
                 std::cout << "optimal solution found!\n";
-                print_solution();
-            }
+                //print_solution();
+            }*/
+
             return;
         }
 

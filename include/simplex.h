@@ -36,6 +36,7 @@ class Simplex {
         matrix A_big;
         matrix c_trans_big;
         matrix x;
+       
         matrix B;
         matrix B_inv;
         matrix c_B;
@@ -56,6 +57,7 @@ class Simplex {
         void get_basis();
         void calculate_current_solution();
         void print_solution() const;
+        
 
     public:
         // constructor
@@ -66,6 +68,8 @@ class Simplex {
         
         // Solves the optimization problem
         void solve();
+        matrix return_solution() const;
+        double return_opt_cost() const;
 
 
 
