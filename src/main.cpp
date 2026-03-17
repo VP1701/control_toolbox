@@ -67,6 +67,8 @@ int main() {
         matrix x0(3,1);
         x0(0,0)=2; x0(1,0)=2; x0(2,0)=1;
         */
+
+        /*first tests
         std::vector<ConstraintType> types = {LEQ, LEQ, LEQ};
         
         matrix A(2,2);
@@ -117,7 +119,7 @@ int main() {
         MPC test_solver(A, B, C, W_x, W_u, W_du,
                         du_max, du_min, u_max, 
                         u_min, x_max, x_min, x0, 4);
-
+        */
         
         /*run_test("lecture notes", A, B, C, types);
         std::cout << "answer should be: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
@@ -170,6 +172,86 @@ int main() {
         run_test("lecture notes", A, b, c, types);
         std::cout << "answer should be: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
     }*/
+
+
+    std::cout << "--- Starting Simple 2D MPC Test ---\n";
+
+    int nx = 2;
+    int nu = 1;
+    int horizon = 5;
+
+    // 1. Plant Matrices (Stable discrete-time system)
+    matrix A(nx, nx);
+    A(0,0) = 0.9;  A(0,1) = 0.2; 
+    A(1,0) = 0.0;  A(1,1) = 0.8; 
+
+    matrix B(nx, nu);
+    B(0,0) = 0.1;
+    B(1,0) = 0.5;
+
+    // C must be the identity matrix because we are using Method 1
+    matrix C = mops.eye(nx);
+
+    // 2. Weights
+    matrix W_x = mops.zeros(nx, nx);
+    W_x(0,0) = 10.0;  // HIGH penalty: We strictly want to track state 0
+    W_x(1,1) = 0.0;   // ZERO penalty: State 1 is "free" to drift
+
+    matrix W_u = mops.eye(nu) * 0.1;   // Small penalty on absolute control effort
+    matrix W_du = mops.eye(nu) * 1.0;  // Medium penalty on sudden control changes
+
+    // 3. Constraints
+    matrix du_max = mops.ones(nu, 1) * 2.0;    // Max step change in u
+    matrix du_min = mops.ones(nu, 1) * (-2.0); // Min step change in u
+
+    matrix u_max = mops.ones(nu, 1) * 10.0;    // Max absolute u
+    matrix u_min = mops.ones(nu, 1) * (0.0);   // Min absolute u (e.g., heater can't cool)
+
+    matrix x_max = mops.ones(nx, 1) * 50.0;    // Max state value (+50)
+    matrix x_min = mops.ones(nx, 1) * (-50.0); // Min state value (-50)
+
+    // 4. Initial condition
+    matrix x0 = mops.zeros(nx, 1);
+
+    // 5. Build Controller
+    std::cout << "Building controller...\n";
+    MPC controller(A, B, C, W_x, W_u, W_du, du_max, du_min, u_max, u_min, x_max, x_min, x0, horizon);
+    std::cout << "Controller built successfully.\n\n";
+
+    // 6. Setpoint and Reference Vector
+    matrix setpoint(nx, 1);
+    setpoint(0,0) = 10.0; // Target for State 0 is 10
+    setpoint(1,0) = 0.0;  // Target for State 1 (Ignored by solver because W_x(1,1) = 0)
+
+    // The reference vector passed to solve() must cover the whole horizon (size: h * nx)
+    matrix reference(horizon * nx, 1);
+    for (int i = 0; i < horizon; ++i) {
+        reference.set_block(i * nx, 0, setpoint);
+    }
+
+    // 7. Simulation Loop
+    int sim_steps = 200;
+    matrix x_current = x0;
+
+    for (int k = 0; k < sim_steps; ++k) {
+        std::cout << "=== Step " << k << " ===" << "\n";
+        
+        // --- 1. Calculate optimal control ---
+        matrix u_optimal = controller.solve(x_current, reference);
+        
+        std::cout << "Control Applied (u):" << "\n";
+        mops.print(u_optimal);
+
+        // --- 2. Simulate the plant (x_k+1 = A*x_k + B*u_k) ---
+        x_current = (A * x_current) + (B * u_optimal);
+        
+        std::cout << "New State (x):" << "\n";
+        mops.print(x_current);
+        std::cout << "\n";
+    }
+
+    std::cout << "Simulation complete!" << "\n";
+
     }
 
     return 0;

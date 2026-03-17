@@ -58,7 +58,6 @@ class MPC {
         matrix A_system;
         matrix B_system;
 
-        matrix b;
 
 
         // prediction matrices
@@ -77,6 +76,10 @@ class MPC {
 
         matrix A_simp;
         matrix b_simp;
+
+        matrix prev_control;
+        matrix current_z;
+        matrix u_past;
 
         // holder for constraints. needed for simplex
         std::vector<ConstraintType> constraint_types;
@@ -121,7 +124,7 @@ class MPC {
         matrix construct_b_cdu(const matrix& b_du, const matrix& b_u, const matrix& b_y, const matrix& b_yu);
 
         matrix construct_A_simplex();
-        matrix construct_b_simplex();
+        matrix construct_b_simplex(const matrix& b_constraint, const matrix& u_past, const matrix& e);
 
         // Used to compute b online
         matrix compute_constraint_b(const matrix& u_prev, const matrix& x_current);

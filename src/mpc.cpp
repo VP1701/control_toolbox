@@ -42,7 +42,6 @@ matrix MPC::construct_C_a(const matrix& C, const matrix& B) {
     return C_a;
 }
 
-
 matrix MPC::construct_P(const matrix& A,  const matrix& C, int horizon) {
     /*
     Creates matrix S_c for prediction the state values x(k+1,...,k+h_p) = S_x * x(k) + dS_u * u(k-1) + S_u * u(k,...,k+h_u-1)
@@ -139,8 +138,6 @@ matrix MPC::construct_H_x(const matrix& A,const matrix& B, int horizon) {
     }
     return H;
 }
-
-
 
 matrix MPC::construct_constraint_C_du() {
     matrix I = mops.eye(nu*h);
@@ -243,7 +240,6 @@ matrix MPC::construct_constraint_b_yu() {
     return b_yu;
 }
 
-
 matrix MPC::construct_constraint_b_y(const matrix& x_max, const matrix& x_min) {
     matrix L(h*nx, nx);
     matrix I = mops.eye(nx);
@@ -305,7 +301,7 @@ matrix MPC::compute_constraint_b(const matrix& u_prev, const matrix& x_current) 
     int rows = b_c.rows;
     int columns = b_c.columns;
     matrix b(rows, columns);
-    b = b_c - b_cu*u_prev - P * current_z;
+    b = b_c - b_cu*u_prev - (b_cdu * current_z);
     return b;
 }
 
@@ -358,7 +354,7 @@ matrix MPC::construct_A_simplex() {
 
     matrix A_simp = mops.zeros(tot_rows, tot_cols);
 
-    matrix T_u = mops.lower_toeplitz_I(u_rows, A_constraint.columns);
+    matrix T_u = mops.lower_toeplitz_I(u_rows, nu);
     matrix m_A_constraint = A_constraint * (-1.0);
     matrix m_H = H * (-1.0);
     matrix m_T_u = T_u * (-1.0);
@@ -402,6 +398,69 @@ matrix MPC::construct_A_simplex() {
 
 }
 
+matrix MPC::construct_b_simplex(const matrix& b_constraint, const matrix& u_past, const matrix& e) {
+    // b_simp = [b_constraint;-u_past;u_past;e;-e]
+    
+    int tot_rows = b_constraint.rows + 2 * h * nu + 2 * h * nx;
+    matrix b_simp(tot_rows,1);
+
+    int offset = 0;
+    b_simp.set_block(0, 0, b_constraint);
+    offset += b_constraint.rows;
+
+    b_simp.set_block(offset, 0, u_past * (-1.0));
+    offset += h * nu;
+
+    b_simp.set_block(offset, 0, u_past);
+    offset += h * nu;
+
+    b_simp.set_block(offset, 0, e);
+    offset += h * nx;
+
+    b_simp.set_block(offset, 0, e * (-1.0));
+
+    return b_simp;
+}
+
+matrix MPC::solve(const matrix& measurement, const matrix& reference) {
+
+    current_z.set_block(0, 0, measurement);
+    current_z.set_block(nx, 0, prev_control);
+
+    b_constraint = compute_constraint_b(prev_control, measurement);
+
+    matrix free_resp = P * current_z;
+
+    matrix e = reference - free_resp;
+
+    for (int i = 0; i < h; ++i) {
+        u_past.set_block(i * nu, 0 , prev_control);
+    }
+
+    b_simp = construct_b_simplex(b_constraint, u_past, e);
+
+    std::cout << "Initializing simplex" << "\n";
+    Simplex solver(A_simp, b_simp, c_T, constraint_types);
+    std::cout << "Solving" << "\n";
+    solver.solve();
+    std::cout << "returning solution" << "\n";
+    matrix Z = solver.return_solution();
+
+    matrix du_pos(nu, 1);
+    matrix du_neg(nu, 1);
+
+    std::cout << "extrackting control" << "\n";
+    for (int i = 0; i < nu; ++i) {
+        du_pos(i, 0) = Z(i,0);
+        du_neg(i, 0) = Z(i + (h * nu),0);
+    }
+
+    matrix du = du_pos - du_neg;
+
+    prev_control = prev_control + du;
+
+    return prev_control;
+}
 
 MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
          const matrix& W_x, const matrix& W_u, const matrix& W_du,
@@ -413,13 +472,9 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
     A_a = construct_A_a(A, B);  
     B_a = construct_B_a(A, B);
     C_a = construct_C_a(C, B);
-    nu = B_a.columns;
-    nx = A_a.rows;
+    nu = B.columns;
+    nx = A.rows;
 
-    
-
-
-    
     P = construct_P(A_a, C_a, horizon);
     //std::cout << "P: " << "\n";
     //mops.print(P);
@@ -472,24 +527,21 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
     b_cu =  construct_b_cu(b_du, b_u, b_y, b_Lu);
     
     matrix u0 = mops.zeros(B.columns,1);
-    b_constraint = compute_constraint_b(u0, x0);
-
-    constraint_types = fill_contraints(b);
-
+    
     c_T = construct_c_trans_L1(W_x, W_u, W_du);
     //std::cout << "c_trans: " << "\n";
     //mops.print(c_T);
 
     A_simp = construct_A_simplex();
     
-    //solver = Simplex(A_constraint, b, c_trans, constraint_types);
-    //b_y = construct_constraint_b_y(x_max, x_min);
-    //std::cout << "b_du: " << "\n";
-    //mops.print(b_du);
 
-    //b_constraint = construct_constraint_b(b_du, b_u, b_y);
-    //std::cout << "b_constraint: " << "\n";
-    //mops.print(b_constraint);
+    current_z = matrix(nx + nu, 1);
+    std::cout << "Amount of A_simp rows: " << A_simp.rows << "\n";
+    u_past = matrix(h * nu, 1);
+    prev_control = mops.zeros(nu, 1);
+
+    constraint_types = std::vector<ConstraintType>(A_simp.rows, LEQ);
+    
 }
 
 
