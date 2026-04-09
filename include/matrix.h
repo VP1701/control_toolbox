@@ -3,6 +3,7 @@
 #define MATRIX_H
 
 #include <iostream>
+#include <cmath> // for sqrt
 
 struct matrix {
     int rows;
@@ -88,6 +89,26 @@ struct matrix {
         return LU;
     }
 
+    matrix chol() const {
+        matrix L(rows, columns);
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j <= i; j++) {
+                double sum = 0.0;
+                for (int k = 0; k < j; k++) {
+                    sum += L.data[i * columns + k] * L.data[j * columns + k]; //L[i][k] * L[j][k]
+                }
+
+                if (i == j) {
+                    L(i,j) = std::sqrt(data[i * columns + i] - sum);//L[i][j] = sqrt(A[i][i] - sum)
+                } else {
+                    L(i,j) = (data[i * columns + j] - sum) / (L.data[j * columns + j]); //L[i][j] = (1.0 / L[j][j] * (A[i][j] - sum))
+                }
+            }
+        }
+        return L;
+    }
+
     matrix& swap_rows(int row_ind1, int row_ind2) {
         // Check that indices are different
         if (row_ind1 == row_ind2) return *this;
@@ -155,6 +176,8 @@ struct matrix {
         return result;
     }
 
+    
+
     // trick to make scalar multiplication work. but need to always m,ultiply from the right :(
 
     matrix operator * (double scalar) const {
@@ -184,6 +207,7 @@ struct matrix {
         }
         return result;
     }
+
 };
 
 class Matrix {
@@ -200,12 +224,17 @@ class Matrix {
         matrix zeros(int r, int c);
         matrix ones(int r, int c);
 
-
+        matrix backslash(const matrix& A, const matrix& B);
+        matrix backslash_chol(const matrix& L, const matrix& B);
+        matrix lin_solve(const matrix& A, const matrix& b);
+        matrix lin_solve_chol(const matrix& L, const matrix& b);
+        
         void print(const matrix& A);
         matrix multiply(const matrix& A, const matrix& B);
         matrix addition(const matrix& A, const matrix& B);
         matrix subtraction(const matrix& A, const matrix& B);
         matrix inverse(const matrix& A);
+        
         matrix get_column(const matrix& A, int n);
 };
 

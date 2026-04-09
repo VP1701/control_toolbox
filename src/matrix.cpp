@@ -141,7 +141,99 @@ matrix Matrix::get_column(const matrix& A, int n) {
     return column;
 }
 
+matrix Matrix::lin_solve(const matrix& A, const matrix& b) {
+    // solve x from A*x=b using cholesky decomposition
+    matrix L = A.chol();
+    int rows = L.rows;
+    int columns = L.columns;
+    matrix y(rows, 1);
+    matrix x(rows, 1);
 
+    // solve intermediary y
+    for (int i = 0; i < rows; ++i) {
+        double sum = 0.0;
+        for (int j = 0; j < i; ++j) {
+            sum += L.data[i * columns + j]*y.data[j];
+        }
+        y.data[i] = (b.data[i] - sum) / L.data[i * columns + i];
+    }
+
+    // solve x without transposing L 
+    // L_ij^T=L_ji
+    for (int i = rows - 1; i >= 0; --i) { // start from final row
+        double sum = 0.0;
+        for (int j = i + 1; j < rows; ++j) {
+            sum += L.data[j * columns + i]*x.data[j];
+        }
+        x.data[i] = (y.data[i] - sum) / L.data[i * columns + i];
+    }
+    return x;
+}
+
+matrix Matrix::lin_solve_chol(const matrix& L, const matrix& b) {
+    // solve x from A*x=b using precomputed cholesky decomposition L
+    
+    int rows = L.rows;
+    int columns = L.columns;
+    matrix y(rows, 1);
+    matrix x(rows, 1);
+
+    // solve intermediary y
+    for (int i = 0; i < rows; ++i) {
+        double sum = 0.0;
+        for (int j = 0; j < i; ++j) {
+            sum += L.data[i * columns + j]*y.data[j];
+        }
+        y.data[i] = (b.data[i] - sum) / L.data[i * columns + i];
+    }
+
+    // solve x without transposing L 
+    // L_ij^T=L_ji
+    for (int i = rows - 1; i >= 0; --i) { // start from final row
+        double sum = 0.0;
+        for (int j = i + 1; j < rows; ++j) {
+            sum += L.data[j * columns + i]*x.data[j];
+        }
+        x.data[i] = (y.data[i] - sum) / L.data[i * columns + i];
+    }
+    return x;
+}
+
+matrix Matrix::backslash(const matrix& A, const matrix& B) {
+    // solves A * X = B with chol. only works for symmetric positive definite matrix A 
+    // will update to use LU decomposition later to make function more general.
+
+    matrix L = A.chol();
+    matrix X(B.rows, B.columns);
+
+    // split the problem to solve columns by columns so lin_solve_chol can be used
+
+    for  (int i = 0; i < B.columns; ++i) {
+        matrix b_col = get_column(B, i);
+        
+        matrix x_col = lin_solve_chol(L, b_col);
+
+        X.set_block(0, i, x_col);
+    }
+    return X;
+}
+
+matrix Matrix::backslash_chol(const matrix& L, const matrix& B) {
+    // solves A * X = B with chol. only works for symmetric positive definite matrix A.
+
+    matrix X(B.rows, B.columns);
+
+    // split the problem to solve columns by columns so lin_solve_chol can be used
+
+    for  (int i = 0; i < B.columns; ++i) {
+        matrix b_col = get_column(B, i);
+        
+        matrix x_col = lin_solve_chol(L, b_col);
+
+        X.set_block(0, i, x_col);
+    }
+    return X;
+}
 
 matrix Matrix::inverse(const matrix& A) {
     int n = A.rows;

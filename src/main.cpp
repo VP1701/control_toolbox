@@ -6,253 +6,61 @@
 #include "matrix.h"
 #include "simplex.h"
 #include "mpc.h"
+#include "fstream"
 
 Matrix mops;
 
-void run_test(const char* name, const matrix& A, const matrix& b, const matrix& c, 
-              const std::vector<ConstraintType>& types) {
-    std::cout << "\n";
-    std::cout << "==================================================\n";
-    std::cout << "TEST: " << name << "\n";
-    std::cout << "==================================================\n";
-
-    // Call the updated constructor
-    
-    
-    Simplex solver(A, b, c, types); 
-    int iters = 1;
-    long long time_total;
-    
-    for (int i = 0; i < iters; ++i) {
-        typedef std::chrono::high_resolution_clock Clock;
-        auto t1 = Clock::now();
-        solver.solve();
-        auto t2 = Clock::now();
-        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1);
-        time_total += ns.count();
-        std::cout << "iteration" << i << "\n";
-    }
-    double avg_ns = time_total / iters;
-    double avg_ms = avg_ns / 1000000.0;
-    std::cout << "time used for solving "<< iters << " LP problems: " << time_total / 1000000.0 << " ms\n";
-    std::cout << "average time for on LP problem: " << avg_ms << " ms\n";
-    matrix sol(3,1);
-    sol = solver.return_solution();
-    std::cout << "printing soltuion outside class" << "\n";
-    mops.print(sol);
-    
-}
 
 int main() {
     
-    
 
-    {
+    // 1. Setup the Dense SPD Matrix A
+    matrix A(3, 3);
+    A(0,0) = 4.0;   A(0,1) = 12.0;  A(0,2) = -16.0;
+    A(1,0) = 12.0;  A(1,1) = 37.0;  A(1,2) = -43.0;
+    A(2,0) = -16.0; A(2,1) = -43.0; A(2,2) = 98.0;
 
-        // model of 
-        /*
-        matrix A(3,3);
-        A(0,0) = 1;  A(0,1) = 0.0002;  A(0,2) = 0.00003;
-        A(1,0) = 0;  A(1,1) = 1;  A(1,2) = 0.1726;
-        A(2,0) = 0;  A(2,1) = 0;  A(2,2) = 1;
+    std::cout << "--- 0. Factorization Check ---" << "\n";
+    matrix L = A.chol();
+    std::cout << "Computed L (Should be lower triangular: 2, 6, 1, -8, 5, 3): \n";
+    mops.print(L);
 
-        matrix B = mops.zeros(3,1);
-        B(0,0)=0.00003; 
-        B(1,0)=0.1726;
-        B(2,0)=0.0;
+    // ==========================================
+    // TEST 1 & 2: Vector Solvers (lin_solve)
+    // ==========================================
+    matrix b(3, 1);
+    b(0,0) = -20.0;
+    b(1,0) = -43.0;
+    b(2,0) = 192.0;
 
-        matrix C = mops.zeros(1,3);
-        C(0,0)=1; C(0,1)=0; C(0,2)=0;
+    std::cout << "\n--- 1. Testing lin_solve(A, b) ---" << "\n";
+    matrix x1 = mops.lin_solve(A, b);
+    std::cout << "Expected: [1, 2, 3]^T \nGot: \n";
+    mops.print(x1);
 
-        matrix x0(3,1);
-        x0(0,0)=2; x0(1,0)=2; x0(2,0)=1;
-        */
-
-        /*first tests
-        std::vector<ConstraintType> types = {LEQ, LEQ, LEQ};
-        
-        matrix A(2,2);
-        A(0,0) = 0.9;  A(0,1) = -0.5;
-        A(1,0) = 0;  A(1,1) = 0.8;
-        
-
-        matrix B = mops.zeros(2,2);
-        B(0,0)= 1.0; B(0,1) = 1;
-        B(1,0)= -2.0; B(1,1) = 0.0;
-        
-
-        matrix C = mops.zeros(2,2);
-        C(0,0)=2; C(0,1)=0.5; 
-        C(1,0) = -1.0; C(1,1) = 1.0;
-        matrix W_x = mops.eye(4);
-        matrix W_u = mops.eye(4) * 2;
-        matrix W_du = mops.eye(4) * 3;
-
-        matrix du_max(2,1);
-        du_max(0,0) = 1.0;
-        du_max(1,0) = 2.0;
-
-        matrix du_min(2,1);
-        du_min(0,0) = -1.0;
-        du_min(1,0) = -3.0;
-
-        matrix u_max(2,1);
-        u_max(0,0) = 1.0;
-        u_max(1,0) = 4.0;
-
-        matrix u_min(2,1);
-        u_min(0,0) = -1.0;
-        u_min(1,0) = -5.0;
-
-        matrix x_max(2,1);
-        x_max(0,0) = 1.0;
-        x_max(1,0) = 6.0;
-
-        matrix x_min(2,1);
-        x_min(0,0) = -1.0;
-        x_min(1,0) = -7.0;
-        matrix x0(2,1);
-        x0(0,0) = 0.0;
-        x0(1,0) = 0.0;
-
-        
-        MPC test_solver(A, B, C, W_x, W_u, W_du,
-                        du_max, du_min, u_max, 
-                        u_min, x_max, x_min, x0, 4);
-        */
-        
-        /*run_test("lecture notes", A, B, C, types);
-        std::cout << "answer should be: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
-        std::cout << "A = " << "\n";
-        mops.print(A);
-        std::cout << "A + A = " << "\n";
-        mops.print(A+A);
-        matrix D = A * C;
-        std::cout << "A * x = " << "\n";
-        mops.print(A*x);
-        std::cout << "C * x = " << "\n";
-        mops.print(C*x);
-        std::cout << "C= " << "\n";
-        mops.print(C);
-
-        std::cout << "C * B = " << "\n";
-        mops.print(C*B);
-        std::cout << "C * A * B = " << "\n";
-        mops.print(C*A*B);
-        std::cout << "C * A * A * B = " << "\n";
-        mops.print(C*A*A*B);
-        MPC test(A,B,C,3);
-        */
-
-        /*int time_steps = 100;
-        matrix u(1,1);
-        u(0,0)=0.1;
-        for (int i = 0; i < time_steps; i++) {
-            x0 = A*x0+B*u;
-            std::cout << "state value: " << "\n";
-            mops.print(x0);
-        }
-        
-    
-    }
-
-    {
-        matrix A = mops.zeros(2,2);
-        A(0,0)=2; A(0,1)=3;
-        A(1,0)=-1; A(1,1)=1;
-
-        matrix b = mops.zeros(2,1);
-        b(0,0)=6; b(1,0)=1;
-
-        matrix c = mops.zeros(1,2);
-        c(0,0)=-1; c(0,1)=-3;
-
-        std::vector<ConstraintType> types = {LEQ, LEQ};
-
-        run_test("lecture notes", A, b, c, types);
-        std::cout << "answer should be: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
-    }*/
+    std::cout << "\n--- 2. Testing lin_solve_chol(L, b) ---" << "\n";
+    matrix x2 = mops.lin_solve_chol(L, b);
+    std::cout << "Expected: [1, 2, 3]^T \nGot: \n";
+    mops.print(x2);
 
 
-    std::cout << "--- Starting Simple 2D MPC Test ---\n";
+    // ==========================================
+    // TEST 3 & 4: Matrix Solvers (backslash)
+    // ==========================================
+    matrix B(3, 2);
+    B(0,0) = -20.0; B(0,1) = 28.0;
+    B(1,0) = -43.0; B(1,1) = 80.0;
+    B(2,0) = 192.0; B(2,1) = -141.0;
 
-    int nx = 2;
-    int nu = 1;
-    int horizon = 5;
+    std::cout << "\n--- 3. Testing backslash(A, B) ---" << "\n";
+    matrix X1 = mops.backslash(A, B);
+    std::cout << "Expected: \n[1, 0]\n[2, 1]\n[3, -1]\nGot: \n";
+    mops.print(X1);
 
-    // 1. Plant Matrices (Stable discrete-time system)
-    matrix A(nx, nx);
-    A(0,0) = 0.9;  A(0,1) = 0.2; 
-    A(1,0) = 0.0;  A(1,1) = 0.8; 
-
-    matrix B(nx, nu);
-    B(0,0) = 0.1;
-    B(1,0) = 0.5;
-
-    // C must be the identity matrix because we are using Method 1
-    matrix C = mops.eye(nx);
-
-    // 2. Weights
-    matrix W_x = mops.zeros(nx, nx);
-    W_x(0,0) = 10.0;  // HIGH penalty: We strictly want to track state 0
-    W_x(1,1) = 0.0;   // ZERO penalty: State 1 is "free" to drift
-
-    matrix W_u = mops.eye(nu) * 0.1;   // Small penalty on absolute control effort
-    matrix W_du = mops.eye(nu) * 1.0;  // Medium penalty on sudden control changes
-
-    // 3. Constraints
-    matrix du_max = mops.ones(nu, 1) * 2.0;    // Max step change in u
-    matrix du_min = mops.ones(nu, 1) * (-2.0); // Min step change in u
-
-    matrix u_max = mops.ones(nu, 1) * 10.0;    // Max absolute u
-    matrix u_min = mops.ones(nu, 1) * (0.0);   // Min absolute u (e.g., heater can't cool)
-
-    matrix x_max = mops.ones(nx, 1) * 50.0;    // Max state value (+50)
-    matrix x_min = mops.ones(nx, 1) * (-50.0); // Min state value (-50)
-
-    // 4. Initial condition
-    matrix x0 = mops.zeros(nx, 1);
-
-    // 5. Build Controller
-    std::cout << "Building controller...\n";
-    MPC controller(A, B, C, W_x, W_u, W_du, du_max, du_min, u_max, u_min, x_max, x_min, x0, horizon);
-    std::cout << "Controller built successfully.\n\n";
-
-    // 6. Setpoint and Reference Vector
-    matrix setpoint(nx, 1);
-    setpoint(0,0) = 10.0; // Target for State 0 is 10
-    setpoint(1,0) = 0.0;  // Target for State 1 (Ignored by solver because W_x(1,1) = 0)
-
-    // The reference vector passed to solve() must cover the whole horizon (size: h * nx)
-    matrix reference(horizon * nx, 1);
-    for (int i = 0; i < horizon; ++i) {
-        reference.set_block(i * nx, 0, setpoint);
-    }
-
-    // 7. Simulation Loop
-    int sim_steps = 200;
-    matrix x_current = x0;
-
-    for (int k = 0; k < sim_steps; ++k) {
-        std::cout << "=== Step " << k << " ===" << "\n";
-        
-        // --- 1. Calculate optimal control ---
-        matrix u_optimal = controller.solve(x_current, reference);
-        
-        std::cout << "Control Applied (u):" << "\n";
-        mops.print(u_optimal);
-
-        // --- 2. Simulate the plant (x_k+1 = A*x_k + B*u_k) ---
-        x_current = (A * x_current) + (B * u_optimal);
-        
-        std::cout << "New State (x):" << "\n";
-        mops.print(x_current);
-        std::cout << "\n";
-    }
-
-    std::cout << "Simulation complete!" << "\n";
-
-    }
+    std::cout << "\n--- 4. Testing backslash_chol(L, B) ---" << "\n";
+    matrix X2 = mops.backslash_chol(L, B);
+    std::cout << "Expected: \n[1, 0]\n[2, 1]\n[3, -1]\nGot: \n";
+    mops.print(X2);
 
     return 0;
 }

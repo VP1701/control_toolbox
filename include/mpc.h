@@ -18,6 +18,7 @@ class MPC {
 
     private:
         mutable Matrix mops;
+        Simplex* solver;
 
         matrix x0; // Initial conditions
         matrix u0; // initial controls. zeros
@@ -57,8 +58,6 @@ class MPC {
 
         matrix A_system;
         matrix B_system;
-
-
 
         // prediction matrices
         matrix P; // state

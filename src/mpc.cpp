@@ -338,8 +338,6 @@ matrix MPC::construct_c_trans_L1(const matrix& W_x, const matrix& W_u, const mat
     return c_T;
 }
     
-
-
 std::vector<ConstraintType> MPC::fill_contraints(const matrix& b) {
     return std::vector<ConstraintType>(b.rows, LEQ);
 }
@@ -439,17 +437,20 @@ matrix MPC::solve(const matrix& measurement, const matrix& reference) {
 
     b_simp = construct_b_simplex(b_constraint, u_past, e);
 
-    std::cout << "Initializing simplex" << "\n";
-    Simplex solver(A_simp, b_simp, c_T, constraint_types);
-    std::cout << "Solving" << "\n";
-    solver.solve();
-    std::cout << "returning solution" << "\n";
-    matrix Z = solver.return_solution();
+    
+
+
+    //std::cout << "Initializing simplex" << "\n";
+    //std::cout << "Solving" << "\n";
+    solver->reset(b_simp);
+    solver->solve();
+    //std::cout << "returning solution" << "\n";
+    matrix Z = solver->return_solution();
 
     matrix du_pos(nu, 1);
     matrix du_neg(nu, 1);
 
-    std::cout << "extrackting control" << "\n";
+    //std::cout << "extrackting control" << "\n";
     for (int i = 0; i < nu; ++i) {
         du_pos(i, 0) = Z(i,0);
         du_neg(i, 0) = Z(i + (h * nu),0);
@@ -541,6 +542,10 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
     prev_control = mops.zeros(nu, 1);
 
     constraint_types = std::vector<ConstraintType>(A_simp.rows, LEQ);
+
+    // Initialize simplex solver 
+    matrix dummy_b = mops.zeros(A_simp.rows, 1);
+    solver = new Simplex(A_simp, dummy_b, c_T, constraint_types);
     
 }
 
