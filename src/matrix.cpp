@@ -141,6 +141,14 @@ matrix Matrix::get_column(const matrix& A, int n) {
     return column;
 }
 
+matrix Matrix::get_row(const matrix& A, int n) {
+    // wip
+    int nx = A.rows;
+    matrix column = zeros(nx, 1);
+    
+    return column;
+}
+
 matrix Matrix::lin_solve(const matrix& A, const matrix& b) {
     // solve x from A*x=b using cholesky decomposition
     matrix L = A.chol();

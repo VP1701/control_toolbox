@@ -61,6 +61,26 @@ struct matrix {
         return result;
     }
 
+    double L1() const {
+        double sum = 0.0;
+        int iters = rows * columns;
+
+        for (int i = 0; i < iters; i++) {
+            sum += std::abs(data[i]);
+        }
+        return sum;
+    }
+
+    double L2() const {
+        double sum = 0.0;
+        int iters = rows * columns;
+
+        for (int i = 0; i < iters; i++) {
+            sum += std::pow(data[i],2);
+        }
+        return std::sqrt(sum);
+    }
+
     
 
     matrix LU() const {
@@ -107,6 +127,22 @@ struct matrix {
             }
         }
         return L;
+    }
+
+    matrix get_row(int n) const {
+        // return the n:th row of the matrix
+        matrix A_r(1, columns);
+        // check feasibility
+        if (n >= rows || n < 0) {
+            std::cout << "ERROR: row index out of bounds, can't extract!" << "\n";
+            return A_r;
+        }
+        //extract row
+        for (int i = 0; i < columns; i++) {
+            A_r.data[i] = data[n * columns + i];
+        }
+
+        return A_r;
     }
 
     matrix& swap_rows(int row_ind1, int row_ind2) {
@@ -236,6 +272,7 @@ class Matrix {
         matrix inverse(const matrix& A);
         
         matrix get_column(const matrix& A, int n);
+        matrix get_row(const matrix& A, int n);
 };
 
 inline matrix operator*(const matrix& A, const matrix& B) {
