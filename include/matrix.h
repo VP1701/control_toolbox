@@ -81,6 +81,27 @@ struct matrix {
         return std::sqrt(sum);
     }
 
+    double scalar() const {
+        if (rows != 1 || columns != 1) {
+            std::cout << "Not a 1x1 matrix. Cant convert to scalar!" << "\n";
+        }
+
+        return data[0];
+    }
+
+    double min() const {
+        // Returns smalles t element from matrix
+        double smallest = 1e100;
+        for (int i = 0; i < rows * columns; i++) {
+            double val = data[i];
+            if (val < smallest) {
+                smallest = val;
+            }
+        }
+        return smallest;
+    }
+
+
     
 
     matrix LU() const {
@@ -108,6 +129,10 @@ struct matrix {
 
         return LU;
     }
+
+    
+
+
 
     matrix chol() const {
         matrix L(rows, columns);
