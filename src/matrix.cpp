@@ -57,6 +57,17 @@ matrix Matrix::lower_toeplitz_I(int T_size, int block_size) {
     return T;
 }
 
+matrix Matrix::create_block_diagonal(const matrix& A, int n_blocks) {
+    int rows = A.rows * n_blocks;
+    int columns = A.columns * n_blocks;
+    matrix result(rows, columns);
+
+    for (int i = 0; i < n_blocks; i++) {
+        result.set_block(i * A.rows, i*A.columns, A);
+    }
+    return result;
+}
+
 matrix Matrix::diag(const matrix& A) {
     // returns diagonal elements of a square matrix
     int rows = A.rows;
@@ -205,6 +216,31 @@ matrix Matrix::lin_solve_chol(const matrix& L, const matrix& b) {
         x.data[i] = (y.data[i] - sum) / L.data[i * columns + i];
     }
     return x;
+}
+
+matrix Matrix::chol_rank1_update(const matrix& L_M, const matrix& z, double beta) {
+    // based on algortihm 3.1 from https://christian-igel.github.io/paper/AMERCMAUfES.pdf
+    int n = L_M.rows;
+    matrix result(n, L_M.columns);
+    matrix omega = z;
+    double b = 1.0;
+    for (int i = 0; i < n; i++) {
+        double l_ii = L_M(i,i);
+        double l_ii_pow = l_ii*l_ii;
+        double omega_pow = omega.data[i]*omega.data[i];
+        double l_new_ii = std::sqrt(l_ii_pow+beta/b*omega_pow);
+        double gamma = l_ii_pow*b+beta*omega_pow;
+        for (int j = i + 1; j < n; j++) {
+            double l_ji = L_M(j,i);
+            omega.data[j] = omega.data[j] - omega.data[i]/l_ii*l_ji;
+            double l_ji_new = (l_new_ii/l_ii)*l_ji+(l_new_ii*beta*omega.data[i])/gamma*omega.data[j];
+            result(j,i) = l_ji_new;
+        }
+        b = b + beta * (omega.data[i]*omega.data[i])/l_ii_pow;
+        result(i,i) = l_new_ii;
+        
+    }
+    return result;
 }
 
 matrix Matrix::backslash(const matrix& A, const matrix& B) {

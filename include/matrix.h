@@ -48,6 +48,23 @@ struct matrix {
         return *this;
     }
 
+    matrix& operator=(matrix&& other) noexcept {
+        if (this == &other) return *this;
+
+        delete[] data;
+
+        rows = other.rows;
+        columns = other.columns;
+        data = other.data;
+
+        other.data = nullptr;
+
+        other.rows = 0;
+        other.columns = 0;
+
+        return *this;
+    }
+
     // matrix transpose
     matrix T() const {
         matrix result(columns, rows);
@@ -236,9 +253,7 @@ struct matrix {
         }
         return result;
     }
-
     
-
     // trick to make scalar multiplication work. but need to always m,ultiply from the right :(
 
     matrix operator * (double scalar) const {
@@ -280,6 +295,7 @@ class Matrix {
 
         // functions for creating matrices
         matrix lower_toeplitz_I(int T_size, int block_size);
+        matrix create_block_diagonal(const matrix& A, int n_blocks);
         matrix diag(const matrix& A);
         matrix eye(int n);
         matrix zeros(int r, int c);
@@ -289,6 +305,7 @@ class Matrix {
         matrix backslash_chol(const matrix& L, const matrix& B);
         matrix lin_solve(const matrix& A, const matrix& b);
         matrix lin_solve_chol(const matrix& L, const matrix& b);
+        matrix chol_rank1_update(const matrix& L_M, const matrix& z, double beta);
         
         void print(const matrix& A);
         matrix multiply(const matrix& A, const matrix& B);

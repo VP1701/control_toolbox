@@ -210,7 +210,7 @@ int main() {
     matrix x0 = mops.zeros(nx, 1);
 
     std::cout << "Building controller...\n";
-    MPC controller(A, B, C, W_x, W_u, W_du, du_max, du_min, u_max, u_min, x_max, x_min, x0, horizon);
+    MPC controller(A, B, C, W_x, W_u, W_du, du_max, du_min, u_max, u_min, x_max, x_min, x0, horizon, LP);
     std::cout << "Controller built successfully.\n\n";
 
     matrix setpoint(nx, 1);
