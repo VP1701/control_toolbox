@@ -22,14 +22,19 @@ matrix Active_Set::get_active_rows(const matrix& A, const std::set<int>& ws) {
 
 void Active_Set::initialize_QP() {
     // the first feasible solution can be found using the simplex method (fletcher s 162)
+    delete solver;
+    solver = nullptr;
+
+    active_set.clear();
+
     int m = A.rows;
     int n = A.columns;
     matrix A_simp(m, 2*n+m);
     matrix ct(2*n+m,1);
     
     matrix I = mops.eye(m);
-    A_simp.set_block(0,0,A);
-    A_simp.set_block(0,n,A*(-1.0));
+    A_simp.set_block(0,0,A*(-1.0));
+    A_simp.set_block(0,n,A);
     A_simp.set_block(0,2*n,I);
 
     // fill in ones to the end
@@ -39,7 +44,7 @@ void Active_Set::initialize_QP() {
 
     constraint_types = std::vector<ConstraintType>(m, LEQ);
 
-    solver = new Simplex(A_simp, b, ct, constraint_types);
+    solver = new Simplex(A_simp, b*(-1.0), ct, constraint_types);
 
     solver->solve();
 
@@ -55,7 +60,7 @@ void Active_Set::initialize_QP() {
     }
 
     if (r.L1() > tol) {
-        std::cout << "No feasible starting point for the QP. Reformulate!" << "\n";
+        //std::cout << "No feasible starting point for the QP. Reformulate!" << "\n";
         return;
     } 
 
@@ -77,9 +82,18 @@ void Active_Set::initialize_QP() {
         if (std::abs(w_residual) < tol) {
             active_set.insert(i);
         } else if (w_residual < -tol) {
-            std::cout << "The problem is infeasible" << "\n";
+            //std::cout << "The problem is infeasible" << "\n";
             return;
         }
+    }
+
+    if (!active_set.empty()) {
+        matrix A_W = get_active_rows(A, active_set);
+        matrix F = mops.backslash_chol(L_Q, A_W.T());
+        matrix M = A_W * F;
+        L_M = M.chol();
+    } else {
+        L_M = matrix(0, 0);
     }
     
 };
@@ -97,7 +111,7 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
 
     */
 
-
+    //std::cout << "Solving KKT" << "\n";
     // Q * p + A^T * lamda = -g
     //  p + Q^-1 * A^T * lamda = -Q^-1 * g
     //  p = -Q^-1 * g - Q^-1 * A^T * lamda
@@ -113,6 +127,8 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
     F = mops.backslash_chol(L_Q, A_T);
 
     // M = A * F
+    // colesky rank 1 update makes this more efficient
+    //matrix M = M + a_i * Q_inv * a_i.T();
     matrix M = A * F;
 
     // now we can write p = -v - F * lamda and substitute it into
@@ -122,6 +138,8 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
 
     // solve lamda from M * lamda = -A * v
     matrix L_M = M.chol();
+    
+
     matrix mA_v = (A * v) * (-1.0); // -A * v
     lamda = mops.lin_solve_chol(L_M, mA_v);
 
@@ -152,27 +170,34 @@ void Active_Set::solve() {
             // all lamda must be non-negative
             bool not_optimal = false;
             for (int k = 0; k < lamda.rows; k++) {
-                if (lamda.data[k] <= -tol) {
+                if (lamda.data[k] >= tol) {
                     not_optimal = true;
                 }
             }
 
             if (not_optimal) {
 
-                double smallest = 1e100;
+                double largest = -1e100;
                 int index = -1;
                 for (int a = 0; a < lamda.rows * lamda.columns; a++) {
                     double val = lamda.data[a];
-                    if (val < smallest) {
-                        smallest = val;
+                    if (val > tol) {
                         index = a;
+                        break;
                     }
                 }
 
                 auto it = active_set.begin();
                 std::advance(it, index);
-
+                
                 active_set.erase(*it);
+                /*if (!active_set.empty()) {
+                    matrix A_W = get_active_rows(A, active_set);
+                    matrix F = mops.backslash_chol(L_Q, A_W.T());
+                    L_M = (A_W * F).chol();
+                } else {
+                    L_M = matrix(0,0);
+                }*/
                 continue;
             } else {
                 return;
@@ -201,25 +226,54 @@ void Active_Set::solve() {
         double alpha = std::min(1.0, result);
 
         if (alpha < 1.0 && index != -1) {
+            /*
+            // rank1 update to L_M when adding constraints
+            matrix a_j = A.get_row(index).T();
+            z = Q_inv * a_j;
+            //Golub & Van Loan Section 6.5.4
+            L_M  = mops.chol_rank1_update(L_M, z, 1.0);*/
             active_set.insert(index);
         }
 
         x = x + p * alpha;
     }
 
-    std::cout << "Maximum number of iteraions reached. Solution not optimal!" << "\n";
+    //std::cout << "Maximum number of iteraions reached. Solution not optimal!" << "\n";
 }
 
-void Active_Set::reset(const matrix& b) {
-    // works but TODO warm start
+void Active_Set::reset(const matrix& b, const matrix& c_new) {
+   
     this->b = b;
-    initialize_QP();
+    this->c = c_new;
+    active_set.clear();
+    for (int i = 0; i < A.rows; i++) {
+        double res = (A.get_row(i) * x - b.get_row(i)).scalar();
+        if ( res < -tol) {
+            initialize_QP();
+            return;
+        }
+        if (std::abs(res) < tol) {
+            active_set.insert(i);
+        }
+    }
+
+    if (!active_set.empty()) {
+        matrix A_W = get_active_rows(A, active_set);
+        matrix F = mops.backslash_chol(L_Q, A_W.T());
+        matrix M = A_W * F;
+        L_M = M.chol();
+    } else {
+        L_M = matrix(0, 0);
+    }
+
 }
 
 Active_Set::Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, const matrix& b_ineq) {
+    solver = nullptr;
     n = Q.rows;
     x = mops.zeros(n, 1); // solution vector
     this->Q = Q;
+    Q_inv = mops.inverse(Q);
     A = A_ineq;
     b = b_ineq;
     n_const = A.rows;

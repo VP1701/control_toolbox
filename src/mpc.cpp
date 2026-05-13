@@ -426,37 +426,46 @@ matrix MPC::solve(const matrix& measurement, const matrix& reference) {
     current_z.set_block(nx, 0, prev_control);
 
     b_constraint = compute_constraint_b(prev_control, measurement);
-
+    b_qp = b_constraint * (-1.0);
     matrix free_resp = P * current_z;
 
     matrix e = reference - free_resp;
 
-    for (int i = 0; i < h; ++i) {
+    if (solver_type == LP) {
+        for (int i = 0; i < h; ++i) {
         u_past.set_block(i * nu, 0 , prev_control);
+        }
+
+        b_simp = construct_b_simplex(b_constraint, u_past, e);
+
+        
+
+
+        //std::cout << "Initializing simplex" << "\n";
+        //std::cout << "Solving" << "\n";
+        lp_solver->reset(b_simp);
+        lp_solver->solve();
+        //std::cout << "returning solution" << "\n";
+        matrix Z = lp_solver->return_solution();
+
+        matrix du_pos(nu, 1);
+        matrix du_neg(nu, 1);
+
+        //std::cout << "extrackting control" << "\n";
+        for (int i = 0; i < nu; ++i) {
+            du_pos(i, 0) = Z(i,0);
+            du_neg(i, 0) = Z(i + (h * nu),0);
+        }
+
+        du = du_pos - du_neg;
+    } else if (solver_type == QP) {
+        matrix c = H.T() * (-1.0) * W_x_block * e;
+        qp_solver->reset(b_qp, c);
+        qp_solver->solve();
+        
+        du = qp_solver->return_solution();
     }
 
-    b_simp = construct_b_simplex(b_constraint, u_past, e);
-
-    
-
-
-    //std::cout << "Initializing simplex" << "\n";
-    //std::cout << "Solving" << "\n";
-    solver->reset(b_simp);
-    solver->solve();
-    //std::cout << "returning solution" << "\n";
-    matrix Z = solver->return_solution();
-
-    matrix du_pos(nu, 1);
-    matrix du_neg(nu, 1);
-
-    //std::cout << "extrackting control" << "\n";
-    for (int i = 0; i < nu; ++i) {
-        du_pos(i, 0) = Z(i,0);
-        du_neg(i, 0) = Z(i + (h * nu),0);
-    }
-
-    matrix du = du_pos - du_neg;
 
     prev_control = prev_control + du;
 
@@ -467,8 +476,9 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
          const matrix& W_x, const matrix& W_u, const matrix& W_du,
          const matrix& du_max, const matrix& du_min, const matrix& u_max,
          const matrix& u_min, const matrix& x_max, const matrix& x_min,
-         const matrix& x0, int horizon) {
-
+         const matrix& x0, int horizon, SolverType solver_type) {
+    
+    this->solver_type = solver_type;
     h = horizon;
     A_a = construct_A_a(A, B);  
     B_a = construct_B_a(A, B);
@@ -526,27 +536,56 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
     b_c =  construct_b_c(b_du, b_u, b_y);
     
     b_cu =  construct_b_cu(b_du, b_u, b_y, b_Lu);
+
+    b_yu = construct_constraint_b_yu();
+
+    b_cdu = construct_b_cdu(b_du, b_u, b_y, b_yu);
     
     matrix u0 = mops.zeros(B.columns,1);
     
-    c_T = construct_c_trans_L1(W_x, W_u, W_du);
-    //std::cout << "c_trans: " << "\n";
-    //mops.print(c_T);
-
-    A_simp = construct_A_simplex();
-    
-
     current_z = matrix(nx + nu, 1);
-    std::cout << "Amount of A_simp rows: " << A_simp.rows << "\n";
-    u_past = matrix(h * nu, 1);
     prev_control = mops.zeros(nu, 1);
 
-    constraint_types = std::vector<ConstraintType>(A_simp.rows, LEQ);
+    if (solver_type == LP) {
+        c_T = construct_c_trans_L1(W_x, W_u, W_du);
+        //std::cout << "c_trans: " << "\n";
+        //mops.print(c_T);
 
-    // Initialize simplex solver 
-    matrix dummy_b = mops.zeros(A_simp.rows, 1);
-    solver = new Simplex(A_simp, dummy_b, c_T, constraint_types);
+        A_simp = construct_A_simplex();
+        
+
+        
+        std::cout << "Amount of A_simp rows: " << A_simp.rows << "\n";
+        u_past = matrix(h * nu, 1);
+        
+
+        constraint_types = std::vector<ConstraintType>(A_simp.rows, LEQ);
+
+        // Initialize simplex solver 
+        matrix dummy_b = mops.zeros(A_simp.rows, 1);
+        lp_solver = new Simplex(A_simp, dummy_b, c_T, constraint_types);
+    } else if (solver_type == QP) {
+        int u_rows = h * nu;
+        matrix T_u = mops.lower_toeplitz_I(u_rows, nu);
+        W_x_block = mops.create_block_diagonal(W_x, h);
+        matrix W_du_block = mops.create_block_diagonal(W_du, h);
+        matrix W_u_block = mops.create_block_diagonal(W_u, h);
+        matrix Q = H.T() * W_x_block * H + T_u.T() * W_du_block * T_u + W_u_block;
+        
+        A_qp = A_constraint * (-1.0);
+        
+        matrix dummy_g = mops.zeros(u_rows, 1);
+        matrix dummy_b_constraint = mops.zeros(A_constraint.rows, 1);
+        qp_solver = new Active_Set(Q, dummy_g, A_qp, dummy_b_constraint);
+    }
     
 }
 
 
+MPC::~MPC() {
+    if (solver_type == LP) {
+        delete lp_solver;
+    } else if (solver_type == QP) {
+        delete qp_solver;
+    }
+}

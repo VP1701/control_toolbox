@@ -5,8 +5,11 @@
 
 #include "matrix.h"
 #include "simplex.h"
+#include "active_set.h"
 #include <iostream>
 #include <vector> // needed for constraint type vector
+
+enum SolverType { LP, QP };
 
 class MPC {
     /* MPC solver
@@ -18,7 +21,8 @@ class MPC {
 
     private:
         mutable Matrix mops;
-        Simplex* solver;
+        Simplex* lp_solver;
+        Active_Set* qp_solver;
 
         matrix x0; // Initial conditions
         matrix u0; // initial controls. zeros
@@ -80,10 +84,23 @@ class MPC {
         matrix current_z;
         matrix u_past;
 
+        // QP things
+        matrix W_x_block;
+        matrix A_qp;
+        matrix b_qp;
+
+
+        matrix du;
+
+        SolverType solver_type;
+
         // holder for constraints. needed for simplex
         std::vector<ConstraintType> constraint_types;
         // function to fill the constraint type vector
         std::vector<ConstraintType> fill_contraints(const matrix& b);
+        // solver types
+        
+
 
         // change these to usethe matrices internelly so no need for return or input matrices
 
@@ -135,10 +152,11 @@ class MPC {
             const matrix& W_x, const matrix& W_u, const matrix& W_du,
             const matrix& du_max, const matrix& du_min, const matrix& u_max,
             const matrix& u_min, const matrix& x_max, const matrix& x_min,
-            const matrix& x0, int horizon);
+            const matrix& x0, int horizon, SolverType solver_type);
 
-        // last thing to implement
         matrix solve(const matrix& measurement, const matrix& reference);
+        ~MPC();
+
 };
 
 #endif // MPC_H
