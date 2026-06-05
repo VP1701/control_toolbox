@@ -121,10 +121,10 @@ void Simplex::solve() {
         if (iter > 0 && iter % 20 == 0) {
             calculate_current_solution();
         }*/
-
+        /*
         if (iter > 0 && iter % 50 == 0) {
             std::cout << "  ... iteration " << iter << "\n";
-        }
+        }*/
 
         for (int i = 0; i < m; ++i) {
             c_B(0,i) = c_trans(0, basis_idx[i]);

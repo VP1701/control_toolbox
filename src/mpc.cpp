@@ -46,7 +46,7 @@ matrix MPC::construct_P(const matrix& A,  const matrix& C, int horizon) {
     /*
     Creates matrix S_c for prediction the state values x(k+1,...,k+h_p) = S_x * x(k) + dS_u * u(k-1) + S_u * u(k,...,k+h_u-1)
     This is for the case where all states are measurable so C matrix is included in S_x which is not valid
-    for cases where not all states cannot be measured.
+    for cases where not all states can be measured.
     */
     int n = C.rows;
     int columns = A.columns;
