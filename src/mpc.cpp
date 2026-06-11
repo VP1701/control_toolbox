@@ -570,7 +570,7 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
         W_x_block = mops.create_block_diagonal(W_x, h);
         matrix W_du_block = mops.create_block_diagonal(W_du, h);
         matrix W_u_block = mops.create_block_diagonal(W_u, h);
-        matrix Q = H.T() * W_x_block * H + T_u.T() * W_du_block * T_u + W_u_block;
+        matrix Q = H.T() * W_x_block * H + T_u.T() * W_u_block * T_u + W_du_block;
         
         A_qp = A_constraint * (-1.0);
         

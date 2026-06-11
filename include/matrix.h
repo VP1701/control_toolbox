@@ -208,10 +208,8 @@ struct matrix {
     }
 
     matrix& add_multiple_of_row(int dest_row, int src_row, double scalar) {
-        if (scalar == 0.0) {
-        std::cout << "Error: multiplying row by zero!" << "\n";
-        return *this;
-        }
+        if (scalar == 0.0) return *this;
+        
         for (int i = 0; i < columns; ++i) {
             data[dest_row * columns + i] += data[src_row * columns + i] * scalar;
         }

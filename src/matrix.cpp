@@ -316,17 +316,17 @@ matrix Matrix::inverse(const matrix& A) {
             return A;
         }
 
-        augmented = swap_rows(augmented, p, max_val_row);
+        augmented.swap_rows(p, max_val_row);
 
         double pivot = augmented(p,p);
-        augmented = multiply_row(augmented, p, 1.0 / pivot);
+        augmented.multiply_row(p, 1.0 / pivot);
 
         // ELiminate column p from other rows
         for (int i = 0; i < n; ++i) {
             if (i != p) {
                 double factor = augmented(i, p);
 
-                add_multiple_of_row(augmented, i, p, -factor);
+                augmented.add_multiple_of_row(i, p, -factor);
             }
         }
     }
