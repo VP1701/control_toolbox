@@ -5,60 +5,62 @@
 #include <vector> 
 #include "matrix.h"
 #include "simplex.h"
-void run_test(const char* name, const matrix& A, const matrix& b, const matrix& c, 
-              const std::vector<ConstraintType>& types) {
-    std::cout << "\n";
-    std::cout << "==================================================\n";
-    std::cout << "TEST: " << name << "\n";
-    std::cout << "==================================================\n";
+#include "mpc.h"
+#include "fstream"
 
-    // Call the updated constructor
-    Simplex solver(A, b, c, types); 
-    // solver.solve() is called in constructor
+Matrix mops;
 
-    
-}
 
 int main() {
-    Matrix mops;
-    matrix A(2, 2);
-    A(0,0) = 1;
-    A(1,0) = 2;
-    A(0,1) = 3;
-    A(1,1) = 4;
+    
 
-    mops.print(A);
-    matrix At(2, 2);
-    At = A.T();
-    std::cout << "Transposed:" << std::endl;
-    mops.print(At);
-    matrix A2(2, 2);
-    A2 = A * A;
-    std::cout << "Multiplied:" << std::endl;
-    mops.print(A2);
-    std::cout << "Row 2 multiplied by 2:" << std::endl;
-    mops.print(A2.multiply_row(1, 2));
-    std::cout << "swap rows 1 and 2:" << std::endl;
-    mops.print(A2.swap_rows(1, 0));
-    std::cout << "add 2 times row1 to row 2" << std::endl;
-    mops.print(A2.add_multiple_of_row(1, 0, 2));
+    // 1. Setup the Dense SPD Matrix A
+    matrix A(3, 3);
+    A(0,0) = 4.0;   A(0,1) = 12.0;  A(0,2) = -16.0;
+    A(1,0) = 12.0;  A(1,1) = 37.0;  A(1,2) = -43.0;
+    A(2,0) = -16.0; A(2,1) = -43.0; A(2,2) = 98.0;
 
-    {
-        matrix A = mops.zeros(2,2);
-        A(0,0)=2; A(0,1)=3;
-        A(1,0)=-1; A(1,1)=1;
+    std::cout << "--- 0. Factorization Check ---" << "\n";
+    matrix L = A.chol();
+    std::cout << "Computed L (Should be lower triangular: 2, 6, 1, -8, 5, 3): \n";
+    mops.print(L);
 
-        matrix b = mops.zeros(2,1);
-        b(0,0)=6; b(1,0)=1;
+    // ==========================================
+    // TEST 1 & 2: Vector Solvers (lin_solve)
+    // ==========================================
+    matrix b(3, 1);
+    b(0,0) = -20.0;
+    b(1,0) = -43.0;
+    b(2,0) = 192.0;
 
-        matrix c = mops.zeros(1,2);
-        c(0,0)=-1; c(0,1)=-3;
+    std::cout << "\n--- 1. Testing lin_solve(A, b) ---" << "\n";
+    matrix x1 = mops.lin_solve(A, b);
+    std::cout << "Expected: [1, 2, 3]^T \nGot: \n";
+    mops.print(x1);
 
-        std::vector<ConstraintType> types = {LEQ, LEQ};
+    std::cout << "\n--- 2. Testing lin_solve_chol(L, b) ---" << "\n";
+    matrix x2 = mops.lin_solve_chol(L, b);
+    std::cout << "Expected: [1, 2, 3]^T \nGot: \n";
+    mops.print(x2);
 
-        run_test("lecture notes", A, b, c, types);
-        std::cout << "answer should be: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
-    }
+
+    // ==========================================
+    // TEST 3 & 4: Matrix Solvers (backslash)
+    // ==========================================
+    matrix B(3, 2);
+    B(0,0) = -20.0; B(0,1) = 28.0;
+    B(1,0) = -43.0; B(1,1) = 80.0;
+    B(2,0) = 192.0; B(2,1) = -141.0;
+
+    std::cout << "\n--- 3. Testing backslash(A, B) ---" << "\n";
+    matrix X1 = mops.backslash(A, B);
+    std::cout << "Expected: \n[1, 0]\n[2, 1]\n[3, -1]\nGot: \n";
+    mops.print(X1);
+
+    std::cout << "\n--- 4. Testing backslash_chol(L, B) ---" << "\n";
+    matrix X2 = mops.backslash_chol(L, B);
+    std::cout << "Expected: \n[1, 0]\n[2, 1]\n[3, -1]\nGot: \n";
+    mops.print(X2);
 
     return 0;
 }

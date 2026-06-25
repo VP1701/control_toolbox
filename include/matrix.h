@@ -3,6 +3,7 @@
 #define MATRIX_H
 
 #include <iostream>
+#include <cmath> // for sqrt
 
 struct matrix {
     int rows;
@@ -47,6 +48,23 @@ struct matrix {
         return *this;
     }
 
+    matrix& operator=(matrix&& other) noexcept {
+        if (this == &other) return *this;
+
+        delete[] data;
+
+        rows = other.rows;
+        columns = other.columns;
+        data = other.data;
+
+        other.data = nullptr;
+
+        other.rows = 0;
+        other.columns = 0;
+
+        return *this;
+    }
+
     // matrix transpose
     matrix T() const {
         matrix result(columns, rows);
@@ -59,6 +77,47 @@ struct matrix {
         }
         return result;
     }
+
+    double L1() const {
+        double sum = 0.0;
+        int iters = rows * columns;
+
+        for (int i = 0; i < iters; i++) {
+            sum += std::abs(data[i]);
+        }
+        return sum;
+    }
+
+    double L2() const {
+        double sum = 0.0;
+        int iters = rows * columns;
+
+        for (int i = 0; i < iters; i++) {
+            sum += std::pow(data[i],2);
+        }
+        return std::sqrt(sum);
+    }
+
+    double scalar() const {
+        if (rows != 1 || columns != 1) {
+            std::cout << "Not a 1x1 matrix. Cant convert to scalar!" << "\n";
+        }
+
+        return data[0];
+    }
+
+    double min() const {
+        // Returns smalles t element from matrix
+        double smallest = 1e100;
+        for (int i = 0; i < rows * columns; i++) {
+            double val = data[i];
+            if (val < smallest) {
+                smallest = val;
+            }
+        }
+        return smallest;
+    }
+
 
     
 
@@ -91,6 +150,46 @@ struct matrix {
         }
 
         return LU;
+    }
+
+    
+
+
+
+    matrix chol() const {
+        matrix L(rows, columns);
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j <= i; j++) {
+                double sum = 0.0;
+                for (int k = 0; k < j; k++) {
+                    sum += L.data[i * columns + k] * L.data[j * columns + k]; //L[i][k] * L[j][k]
+                }
+
+                if (i == j) {
+                    L(i,j) = std::sqrt(data[i * columns + i] - sum);//L[i][j] = sqrt(A[i][i] - sum)
+                } else {
+                    L(i,j) = (data[i * columns + j] - sum) / (L.data[j * columns + j]); //L[i][j] = (1.0 / L[j][j] * (A[i][j] - sum))
+                }
+            }
+        }
+        return L;
+    }
+
+    matrix get_row(int n) const {
+        // return the n:th row of the matrix
+        matrix A_r(1, columns);
+        // check feasibility
+        if (n >= rows || n < 0) {
+            std::cout << "ERROR: row index out of bounds, can't extract!" << "\n";
+            return A_r;
+        }
+        //extract row
+        for (int i = 0; i < columns; i++) {
+            A_r.data[i] = data[n * columns + i];
+        }
+
+        return A_r;
     }
 
     matrix& swap_rows(int row_ind1, int row_ind2) {
@@ -159,6 +258,37 @@ struct matrix {
         }
         return result;
     }
+    
+    // trick to make scalar multiplication work. but need to always m,ultiply from the right :(
+
+    matrix operator * (double scalar) const {
+        matrix result(rows, columns);
+        for (int i = 0; i < rows * columns; ++i) {
+            result.data[i] = data[i] * scalar;
+        }
+        return result;
+    }
+
+    matrix operator + (const matrix& B) {
+        matrix result(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                result.data[i * columns + j] = data[i * columns + j] + B.data[i * columns + j];
+            }
+        }
+        return result;
+    }
+
+    matrix operator - (const matrix& B) {
+        matrix result(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                result.data[i * columns + j] = data[i * columns + j] - B.data[i * columns + j];
+            }
+        }
+        return result;
+    }
+
 };
 
 class Matrix {
@@ -168,15 +298,29 @@ class Matrix {
         matrix multiply_row(matrix& A, int row, double scalar);
         matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
 
+        // functions for creating matrices
+        matrix lower_toeplitz_I(int T_size, int block_size);
+        matrix create_block_diagonal(const matrix& A, int n_blocks);
+        matrix diag(const matrix& A);
         matrix eye(int n);
         matrix e(int n, int pos);
         matrix zeros(int r, int c);
+        matrix ones(int r, int c);
+
+        matrix backslash(const matrix& A, const matrix& B);
+        matrix backslash_chol(const matrix& L, const matrix& B);
+        matrix lin_solve(const matrix& A, const matrix& b);
+        matrix lin_solve_chol(const matrix& L, const matrix& b);
+        matrix chol_rank1_update(const matrix& L_M, const matrix& z, double beta);
+        
         void print(const matrix& A);
         matrix multiply(const matrix& A, const matrix& B);
         matrix addition(const matrix& A, const matrix& B);
         matrix subtraction(const matrix& A, const matrix& B);
         matrix inverse(const matrix& A);
+        
         matrix get_column(const matrix& A, int n);
+        matrix get_row(const matrix& A, int n);
 };
 
 inline matrix operator*(const matrix& A, const matrix& B) {
