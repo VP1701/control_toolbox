@@ -63,26 +63,31 @@ struct matrix {
     
 
     matrix LU() const {
-        matrix LU = *this;
+        matrix LU(columns, rows);
         //matrix P = Matrix.eye(columns);
-
+        matrix I = mops.eye(columns);
         for (int i = 0; i < columns; ++i) {
-            int max_val_row = i;
-            double max_val = std::abs(data[max_val_row * columns + i]);
-            for (int j = i + 1; j < rows; ++j) {
-                double val = std::abs(data[j * columns + i]);
-                if (val>max_val) {
-                    max_val = val;
-                    max_val_row = i;
-                }
-            } 
-            
-            // check singularity
-            if (std::abs(data[max_val_row * columns + i]) < 1e-12) {
-                std::cout << "Matrix is singular. cannot LU decompose" << "\n";
-            }
+            // create new "sarakevektori e"
+            matrix ei = mops.e(columns, i);
 
-            LU.swap_rows(i, max_val_row);
+            // create x
+            
+            matrix x(1, rows);
+            for (int k = 0; k < columns; k++) {
+                if (k <= i) {
+                    x.data[k] = 0.0;
+                } else {
+                    x.data[k] = 
+                }
+            }
+            // create l_k
+            
+
+            // L_k = I - l_k * e_k^T
+
+            // L_k * (L_(k-1) * ... * L_1 * A)
+            
+
         }
 
         return LU;
@@ -164,6 +169,7 @@ class Matrix {
         matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
 
         matrix eye(int n);
+        matrix e(int n, int pos);
         matrix zeros(int r, int c);
         void print(const matrix& A);
         matrix multiply(const matrix& A, const matrix& B);

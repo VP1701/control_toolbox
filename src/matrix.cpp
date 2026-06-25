@@ -41,6 +41,18 @@ matrix Matrix::eye(int n) {
     return M;
 }
 
+matrix Matrix::e(int n, int pos) {
+    matrix e(1, n);
+    for (int i = 0; i < n; i++) {
+        if (i == pos) {
+            e.data[i] = 1.0;
+        } else {
+            e.data[i] = 0.0;
+        }
+    }
+    return e;
+}
+
 matrix Matrix::zeros(int r, int c) {
     matrix m(r, c);
 
