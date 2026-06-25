@@ -21,8 +21,6 @@ void Simplex::get_basis() {
             N(j,i) = A(j, A_col);
         }
     }
-
-
 }
 
 void Simplex::calculate_current_solution() {
@@ -31,23 +29,37 @@ void Simplex::calculate_current_solution() {
     get_basis();
     B_inv = mops.inverse(B);
     matrix xB = B_inv * b;
+    //x = matrix(n_big,1);
     x = mops.zeros(n_big,1);
     for (int i = 0; i < m; ++i) {
         int idx = basis_idx[i];
         x(idx, 0) = xB(i, 0);
     }
+}
 
+void Simplex::update_b(const matrix& b_new) {
+    this->b = b_new;
+    matrix xB = B_inv * b;
+    //x = matrix(n_big,1);
+    x = mops.zeros(n_big,1);
+    for (int i = 0; i < m; ++i) {
+        int idx = basis_idx[i];
+        x(idx, 0) = xB(i, 0);
+    }
 }
 
 void Simplex::print_solution() const {
 
     std::cout << "Printing solution to the simplex" << "\n";
     // modify this to remove slacs from the answer
-    matrix xsol = mops.zeros(n,1);
+    //xsol = matrix(n,1);
+
+    std::cout << "solution 2" << "`\n";
     for (int i = 0; i < n; ++i) {
-        xsol(i,0) = x(i,0);
+        //xsol(i,0) = x(i,0);
+        std::cout << "x_" << i << " = " << x(i,0) << "\n";
     }
-    mops.print(xsol);
+    //mops.print(xsol);
     
     matrix opt = c_trans * x;
     double opt_val = opt(0,0);
@@ -55,11 +67,64 @@ void Simplex::print_solution() const {
     //mops.print(opt);
 }
 
+matrix Simplex::return_solution() const {
+    matrix sol(n,1);
+    for (int i = 0; i < n; ++i) {
+        sol(i,0) = x(i,0);
+    }
+    return sol;
+}
+
+double Simplex::return_opt_cost() const {
+    matrix opt = c_trans * x;
+    double opt_val = opt(0,0);
+    return opt_val;
+}
+
+void Simplex::sherman_morrison(int leaving_row, int entering_column, const matrix& a_j_hat) {
+    // B_inv_new = B_inv * ((a_j_hat - e_r) * B_inv)/ a_j_hat
+
+    double pivot_val = a_j_hat(leaving_row, 0);
+    int leaving_col = basis_idx[leaving_row];
+
+    double new_pivot_x = x(leaving_col, 0) / pivot_val;
+
+    x(entering_column, 0) = new_pivot_x;
+
+    x(leaving_col, 0) = 0.0;
+
+    for (int i = 0; i < m; ++i) {
+        B_inv(leaving_row, i) /= pivot_val; // 
+    }
+
+    for (int i = 0; i < m; ++i) {
+        if (i != leaving_row) {
+            double multiplier = a_j_hat(i,0);
+
+            for (int j = 0; j < m; ++j) {
+                B_inv(i, j) -= multiplier * B_inv(leaving_row, j);
+            }
+
+            x(basis_idx[i], 0) -= multiplier * new_pivot_x;
+        }
+    }
+}
+
 void Simplex::solve() {
-    // todo
-    //std::cout << "Solver started!" << "\n";
-    for (int i = 0; i < MAX_ITERATONS; ++i) {
-        calculate_current_solution();
+    
+    //std::cout << "Simplex solver started!" << "\n";
+    
+    calculate_current_solution();
+    for (int iter = 0; iter < MAX_ITERATIONS; ++iter) {
+        
+        /*
+        if (iter > 0 && iter % 20 == 0) {
+            calculate_current_solution();
+        }*/
+        /*
+        if (iter > 0 && iter % 50 == 0) {
+            std::cout << "  ... iteration " << iter << "\n";
+        }*/
 
         for (int i = 0; i < m; ++i) {
             c_B(0,i) = c_trans(0, basis_idx[i]);
@@ -70,14 +135,8 @@ void Simplex::solve() {
             c_N(0,i) = c_trans(0, non_basis_idx[i]);
         }
 
-        
-
-        //reduced_cost = c_N - c_B*B_inv*N
         matrix reduced_cost = c_N - c_B*B_inv*N;
-        //std::cout << "Reduced cost" << "\n";
-        //mops.print(reduced_cost);
 
-        
         int entering_column = -1; // most negative reduces cost index
 
         // Bland's rule for choosing enterign variable
@@ -88,13 +147,12 @@ void Simplex::solve() {
             double rc = reduced_cost(0, i);
             int col = non_basis_idx[i];
 
-            if (rc < -1e-12) {
+            if (rc < -1e-8) {
                 if (entering_column == -1 || col < entering_column) {
                     entering_column = col;
                 }
             }
         }
-
 
         // check optimality
         if (entering_column == -1) {
@@ -113,7 +171,7 @@ void Simplex::solve() {
                     }
                 }
 
-                if (is_artificial && x(col,0) > 1e-8) {
+                if (is_artificial && x(col,0) > 1e-4) {
                     infeasible = true;
                     break;
                 }
@@ -121,13 +179,13 @@ void Simplex::solve() {
 
             if (infeasible) {
                 std::cout << "Problem is infeasible \n";
-            } else {
+            } /*else {
                 std::cout << "optimal solution found!\n";
-                print_solution();
-            }
+                //print_solution();
+            }*/
+
             return;
         }
-
 
         // Get correct column from A
         a_j = mops.get_column(A, entering_column);
@@ -137,11 +195,12 @@ void Simplex::solve() {
         // Bland's rule for leaving variable
         leaving_row = -1;
         double min_ratio = 1e300;
-
+        
         for (int i = 0; i < m; ++i) {
             double aij = a_j_hat(i,0);
             if (aij > 1e-10) {
-                double ratio = x(basis_idx[i],0) / aij;
+                double numerator = std::max(0.0, x(basis_idx[i],0));
+                double ratio = numerator / aij;
                 int var_idx  = basis_idx[i];
 
                 if (ratio < min_ratio - 1e-12 ||
@@ -160,62 +219,37 @@ void Simplex::solve() {
 
         int leaving_col = basis_idx[leaving_row];
 
+        sherman_morrison(leaving_row, entering_column, a_j_hat);
+
         // update basis indices
         basis_idx[leaving_row] = entering_column;
         auto it = std::find(non_basis_idx.begin(), non_basis_idx.end(), entering_column);
         if (it != non_basis_idx.end()) {
+            int N_indx = it - non_basis_idx.begin();
+
             *it = leaving_col;  // replace the leaving one with the entering one
+
+            for ( int r = 0; r < m; ++r) {
+                N(r, N_indx) = A(r, leaving_col);
+            }
         }
     }
 }
+void Simplex::construct_b(const matrix& b_in, const std::vector<ConstraintType>& constraint_types_in) {
 
-Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_in, const std::vector<ConstraintType>& constraint_types_in) {
-    // constructor for the simplex
+}
 
-    this->m = A_in.rows;
-    this->n = A_in.columns;
-    this->constraint_types = constraint_types_in;
+void Simplex::reset(const matrix& b_new) {
+    A = A_orig;
+    b = b_new;
+    c_trans = c_trans_orig;
+    constraint_types = constraint_types_orig;
 
-    // initialize matrices for optimization
-    
-
-    // check that inputs have valid dimensions
-    if (b_in.rows != m) {
-        std::cout << "Invalid size of A or b. different amount of rows" << "\n";
-    }
-
-    if (b_in.columns != 1) {
-        std::cout << "Invalid amount of columns on b. must have one column!" << "\n";
-    }
-
-    if (c_trans_in.rows != 1) {
-        std::cout << "Invalid amount of rows in c_trans! Must have one row!" << "\n";
-    }
-
-    if (c_trans_in.columns != n) {
-        std::cout << "Invalid amount of columns in A or c_trans! Must ahve same amount of columns!" << "\n";
-    }
-
-    // copy data from input matrices
-    // REDO after implementing matrix struct in a smarter way
-
-    // copy input matrices
-    A = A_in;
-    b = B_in;
-    c_trans = c_trans_in;
-    
-
-
-
-    if (DEBUG) {
-        std::cout << "After copying inputs \n"; 
-        std::cout << "A: \n";
-        mops.print(A);
-        std::cout << "b: \n";
-        mops.print(b);
-        std::cout << "c_trans: \n";
-        mops.print(c_trans);
-    }
+    // clear last iterations lists and indices
+    basis_idx.clear();
+    non_basis_idx.clear();
+    artificial_indices.clear();
+    n_leq = 0; n_geq = 0; n_eq = 0;
 
     // make sure that elements of b are non negative
     for (int i = 0; i < m; ++i) {
@@ -251,8 +285,8 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     // construct big-M matrices
 
     n_big = n + n_leq + n_eq + 2 * n_geq; 
-    matrix A_big(m, n_big);
-    matrix c_big(1,n_big);
+    matrix A_big = mops.zeros(m, n_big);
+    matrix c_trans_big = mops.zeros(1, n_big);
 
     // copy A into left side of A_big
     for (int i = 0; i < m; ++i) {
@@ -319,7 +353,6 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
         mops.print(c_trans);
     }
     
-
     nb = n_big - m;
 
     B = matrix(m, m);
@@ -329,6 +362,19 @@ Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_i
     c_N = matrix(1, n_big - m);
     a_j = matrix(m, 1);
 
-    solve();
+}
+
+Simplex::Simplex(const matrix& A_in, const matrix& b_in, const matrix& c_trans_in, const std::vector<ConstraintType>& constraint_types_in) {
+    // constructor for the simplex
+
+    A_orig = A_in;
+    c_trans_orig = c_trans_in;
+
+
+    this->m = A_in.rows;
+    this->n = A_in.columns;
+    this->constraint_types_orig = constraint_types_in;
+
+    reset(b_in);
 
 }

@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.23)
+
+project(ControlTollBox)
+
+add_executable(COntrolToolBox)
+
+target_sources(COntrolToolBox
+    private
+    src/main.cpp 
+)

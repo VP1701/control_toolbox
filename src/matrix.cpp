@@ -41,11 +41,61 @@ matrix Matrix::eye(int n) {
     return M;
 }
 
+matrix Matrix::lower_toeplitz_I(int T_size, int block_size) {
+    
+
+    matrix I = eye(block_size);
+    matrix T(T_size,T_size);
+    
+    // make C_uId into toeplitz matrix which is a lower block triangular matrix where blocks are I
+    for (int i = 0; i < T_size; i += block_size) {
+        for (int j = (i / block_size) * block_size; j >= 0; j -= block_size) {
+            T.set_block(i, j, I);
+        }
+    }
+
+    return T;
+}
+
+matrix Matrix::create_block_diagonal(const matrix& A, int n_blocks) {
+    int rows = A.rows * n_blocks;
+    int columns = A.columns * n_blocks;
+    matrix result(rows, columns);
+
+    for (int i = 0; i < n_blocks; i++) {
+        result.set_block(i * A.rows, i*A.columns, A);
+    }
+    return result;
+}
+
+matrix Matrix::diag(const matrix& A) {
+    // returns diagonal elements of a square matrix
+    int rows = A.rows;
+    int columns = A.columns;
+    matrix diag(rows,1); // columns vector to store diagonal elements
+
+    for(int i = 0; i < A.rows; ++i) {
+        diag(i,0) = A.data[i * columns + i];
+    }
+    return diag;
+}
+
+
 matrix Matrix::zeros(int r, int c) {
     matrix m(r, c);
 
     for (int i = 0; i < m.rows * m.columns; i++) {
         m.data[i] = 0.0;
+    }
+
+    return m;
+};
+
+matrix Matrix::ones(int r, int c) {
+    matrix m(r, c);
+
+    for (int i = 0; i < m.rows * m.columns; i++) {
+        m.data[i] = 1.0;
     }
 
     return m;
@@ -102,7 +152,132 @@ matrix Matrix::get_column(const matrix& A, int n) {
     return column;
 }
 
+matrix Matrix::get_row(const matrix& A, int n) {
+    // wip
+    int nx = A.rows;
+    matrix column = zeros(nx, 1);
+    
+    return column;
+}
 
+matrix Matrix::lin_solve(const matrix& A, const matrix& b) {
+    // solve x from A*x=b using cholesky decomposition
+    matrix L = A.chol();
+    int rows = L.rows;
+    int columns = L.columns;
+    matrix y(rows, 1);
+    matrix x(rows, 1);
+
+    // solve intermediary y
+    for (int i = 0; i < rows; ++i) {
+        double sum = 0.0;
+        for (int j = 0; j < i; ++j) {
+            sum += L.data[i * columns + j]*y.data[j];
+        }
+        y.data[i] = (b.data[i] - sum) / L.data[i * columns + i];
+    }
+
+    // solve x without transposing L 
+    // L_ij^T=L_ji
+    for (int i = rows - 1; i >= 0; --i) { // start from final row
+        double sum = 0.0;
+        for (int j = i + 1; j < rows; ++j) {
+            sum += L.data[j * columns + i]*x.data[j];
+        }
+        x.data[i] = (y.data[i] - sum) / L.data[i * columns + i];
+    }
+    return x;
+}
+
+matrix Matrix::lin_solve_chol(const matrix& L, const matrix& b) {
+    // solve x from A*x=b using precomputed cholesky decomposition L
+    
+    int rows = L.rows;
+    int columns = L.columns;
+    matrix y(rows, 1);
+    matrix x(rows, 1);
+
+    // solve intermediary y
+    for (int i = 0; i < rows; ++i) {
+        double sum = 0.0;
+        for (int j = 0; j < i; ++j) {
+            sum += L.data[i * columns + j]*y.data[j];
+        }
+        y.data[i] = (b.data[i] - sum) / L.data[i * columns + i];
+    }
+
+    // solve x without transposing L 
+    // L_ij^T=L_ji
+    for (int i = rows - 1; i >= 0; --i) { // start from final row
+        double sum = 0.0;
+        for (int j = i + 1; j < rows; ++j) {
+            sum += L.data[j * columns + i]*x.data[j];
+        }
+        x.data[i] = (y.data[i] - sum) / L.data[i * columns + i];
+    }
+    return x;
+}
+
+matrix Matrix::chol_rank1_update(const matrix& L_M, const matrix& z, double beta) {
+    // based on algortihm 3.1 from https://christian-igel.github.io/paper/AMERCMAUfES.pdf
+    int n = L_M.rows;
+    matrix result(n, L_M.columns);
+    matrix omega = z;
+    double b = 1.0;
+    for (int i = 0; i < n; i++) {
+        double l_ii = L_M(i,i);
+        double l_ii_pow = l_ii*l_ii;
+        double omega_pow = omega.data[i]*omega.data[i];
+        double l_new_ii = std::sqrt(l_ii_pow+beta/b*omega_pow);
+        double gamma = l_ii_pow*b+beta*omega_pow;
+        for (int j = i + 1; j < n; j++) {
+            double l_ji = L_M(j,i);
+            omega.data[j] = omega.data[j] - omega.data[i]/l_ii*l_ji;
+            double l_ji_new = (l_new_ii/l_ii)*l_ji+(l_new_ii*beta*omega.data[i])/gamma*omega.data[j];
+            result(j,i) = l_ji_new;
+        }
+        b = b + beta * (omega.data[i]*omega.data[i])/l_ii_pow;
+        result(i,i) = l_new_ii;
+        
+    }
+    return result;
+}
+
+matrix Matrix::backslash(const matrix& A, const matrix& B) {
+    // solves A * X = B with chol. only works for symmetric positive definite matrix A 
+    // will update to use LU decomposition later to make function more general.
+
+    matrix L = A.chol();
+    matrix X(B.rows, B.columns);
+
+    // split the problem to solve columns by columns so lin_solve_chol can be used
+
+    for  (int i = 0; i < B.columns; ++i) {
+        matrix b_col = get_column(B, i);
+        
+        matrix x_col = lin_solve_chol(L, b_col);
+
+        X.set_block(0, i, x_col);
+    }
+    return X;
+}
+
+matrix Matrix::backslash_chol(const matrix& L, const matrix& B) {
+    // solves A * X = B with chol. only works for symmetric positive definite matrix A.
+
+    matrix X(B.rows, B.columns);
+
+    // split the problem to solve columns by columns so lin_solve_chol can be used
+
+    for  (int i = 0; i < B.columns; ++i) {
+        matrix b_col = get_column(B, i);
+        
+        matrix x_col = lin_solve_chol(L, b_col);
+
+        X.set_block(0, i, x_col);
+    }
+    return X;
+}
 
 matrix Matrix::inverse(const matrix& A) {
     int n = A.rows;
