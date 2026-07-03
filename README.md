@@ -1,31 +1,42 @@
 # Control Toolbox
 
-This is my hobby repository for doing control theory related C++ scripts and/or programs.
+This is my hobby repository for doing control theory related C++ programs.
 
 
-## MATH.720 Modeling report
-my simplex algorithm implementation is in this repository. The simplex algorithm minimizes the given problem and calculates the optimal objective value. The implementation also handles degenerate cases/cycling with Bland's rule. The solver isn't perfect the GEQ constraint type doesn't work properly so you still have to manually flip the inequalities to LEQ which doesn't prevent the use of the algorithm but makes it minutely more inconvenient to use.
 
-Inside main.cpp there are test cases for the solver. Last one of them is the soltuion to the gasoline refining example from my report. Because the simplex solver I made is made for minimizing an objective function the solver returns negative of the maximum profits. but the value given by the solver * -1 is the correct answer. The solvers solution were also checked with matlabs linprog and it gave the same answer so I can confidently say that my solver works.
+## Currently working on
+- extending matrix class
+- LTV-MPC
+- adding CMake
+
+## future plans
+- State feedback controller
+- State predictor
+- Kitagawa algorithm
+- Kalman predictor
+- Kalman filter
+
+## MPC solver for Linear time invariant MIMO systems
+compile code:
+```g++ -O2 -Iinclude tests/mpc_test.cpp src/simplex.cpp src/matrix.cpp src/active_set.cpp src/mpc.cpp -o test_mpc```
+run the code:
+```./test_mpc```
+
+## Active set algorithm
+compile code:
+```g++ -O2 -Iinclude tests/test_active_set.cpp src/simplex.cpp src/matrix.cpp src/active_set.cpp -o test_active_set```
+run the code:
+```./test_active_set```
+
+
+## Simplex algorithm
+
 
 For testing the solver you need to clone the repo, have C++ and g++ installed. After that you can run the test with these commands:
 
 compile code:
-```g++ -Iinclude src/main.cpp src/simplex.cpp src/matrix.cpp -o test```
+```g++ -O2 -Iinclude tests/test_simplex.cpp src/simplex.cpp src/matrix.cpp -o test_simplex```
 run the code:
-```./test.exe```
+```./test_simplex```
 
 
-## done
-- Discrete PID-controller class that includes different version depending on the chosen discretization method.
-    includes antiwindup if chosen
-
-## Currently working on
-- extending matrix class
-- start working on vector class
-
-## future plans
--State feedback controller
--State predictor
--Kalman predictor
--Kalman filter
