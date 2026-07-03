@@ -24,6 +24,7 @@ class Simplex {
         int n_eq = 0;
 
         bool infeasible = false;
+        bool unbounded = false;
         bool DEBUG = false;
 
         std::vector<int> basis_idx;
@@ -60,7 +61,7 @@ class Simplex {
         void update_b(const matrix& b_new);
         void get_basis();
         void calculate_current_solution();
-        void print_solution() const;
+        
         void sherman_morrison(int leaving_row, int entering_column, const matrix& a_j_hat);
         void construct_b(const matrix& b_in, const std::vector<ConstraintType>& constraint_types_in);
 
@@ -74,6 +75,7 @@ class Simplex {
         // Solves the optimization problem
         void reset(const matrix& b_new);
         void solve();
+        void print_solution() const;
         matrix return_solution() const;
         double return_opt_cost() const;
 

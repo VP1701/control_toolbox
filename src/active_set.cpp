@@ -95,6 +95,8 @@ void Active_Set::initialize_QP() {
     } else {
         L_M = matrix(0, 0);
     }
+
+    std::cout << "QP initialized \n";
     
 };
 
@@ -149,10 +151,21 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
 
 }
 
+
+// helper for debug. move to be part of matrix struct
+bool has_nan(const matrix& A) {
+    for (int i = 0; i < A.rows*A.columns; ++i)
+        if (std::isnan(A.data[i])) return true;
+    return false;
+}
+
 void Active_Set::solve() {
     
     for (int i = 0; i < max_iters; i++) {
         matrix A_W = get_active_rows(A, active_set);
+
+        bool is_nan = has_nan(A_W);
+        // (is_nan) std::cout << "A_W has nan\n";
         matrix g = Q * x + c;
         if (active_set.empty()){
             p = mops.lin_solve_chol(L_Q, g*(-1.0));
@@ -167,6 +180,7 @@ void Active_Set::solve() {
         // check if ||p|| = 0
 
         if (p.L2() < tol) {
+            if (active_set.empty()) return;
             // all lamda must be non-negative
             bool not_optimal = false;
             for (int k = 0; k < lamda.rows; k++) {
@@ -176,7 +190,7 @@ void Active_Set::solve() {
             }
 
             if (not_optimal) {
-
+                // blands rule for active set. pick the lowest index -> never cycle
                 double largest = -1e100;
                 int index = -1;
                 for (int a = 0; a < lamda.rows * lamda.columns; a++) {

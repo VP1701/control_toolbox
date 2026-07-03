@@ -50,11 +50,21 @@ void Simplex::update_b(const matrix& b_new) {
 
 void Simplex::print_solution() const {
 
-    std::cout << "Printing solution to the simplex" << "\n";
+    if (infeasible) {
+        std::cout << "Problem is infeasible" << "\n";
+        return;
+    }
+
+    if (unbounded) {
+        std::cout << "Problem is unbounded \n";
+        return;
+    }
+    
+    
     // modify this to remove slacs from the answer
     //xsol = matrix(n,1);
 
-    std::cout << "solution 2" << "`\n";
+    std::cout << "solution:" << "`\n";
     for (int i = 0; i < n; ++i) {
         //xsol(i,0) = x(i,0);
         std::cout << "x_" << i << " = " << x(i,0) << "\n";
@@ -177,12 +187,7 @@ void Simplex::solve() {
                 }
             }
 
-            if (infeasible) {
-                std::cout << "Problem is infeasible \n";
-            } /*else {
-                std::cout << "optimal solution found!\n";
-                //print_solution();
-            }*/
+            
 
             return;
         }
@@ -213,7 +218,8 @@ void Simplex::solve() {
         }
 
         if (leaving_row == -1) {
-            std::cout << "Problem is unbounded \n";
+            unbounded = true;
+            
             return; 
         }
 

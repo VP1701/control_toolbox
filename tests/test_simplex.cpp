@@ -14,7 +14,8 @@ void run_test(const char* name, const matrix& A, const matrix& b, const matrix& 
 
     // Call the updated constructor
     Simplex solver(A, b, c, types); 
-    // solver.solve() is called in constructor
+    solver.solve();
+    solver.print_solution();
 
     
 }
@@ -36,7 +37,7 @@ int main() {
         std::vector<ConstraintType> types = {LEQ, LEQ};
 
         run_test("lecture notes", A, b, c, types);
-        std::cout << "answer should be: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
+        std::cout << "answer from lecture notes: " << "x_transpose = [0.6, 1.6], opt_cost = -5.4" << "\n";
     }
 
     {
@@ -83,6 +84,8 @@ int main() {
 
         std::vector<ConstraintType> types = {LEQ, LEQ};
         run_test("Degeneracy test", A, b, c, types);
+        std::cout << "answer from matlabs solver: " << "x^T = [ -0.0, 2.0 ], opt_cost = -18.0" << "\n";
+    
     }
 
     {
@@ -114,35 +117,10 @@ int main() {
     std::vector<ConstraintType> types(8, LEQ);
 
     run_test("Large-ish feasible problem", A, b, c, types);
+    std::cout << "answer from matlabs solver: " << "x^T = [ 0.0000, 1.2908, 0.0000, 6.0395, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 5.1077 ], opt_cost = -46.50455628" << "\n";
     }
 
 
-    {
-    matrix A = mops.zeros(6, 2);  
-    A(0,0)=1;    A(0,1)=1;
-    A(1,0)=1;    A(1,1)=0.25;
-    A(2,0)=1;    A(2,1)=-1;
-    A(3,0)=-0.25;A(3,1)=-1;
-    A(4,0)=-1;   A(4,1)=-1;
-    A(5,0)=-1;   A(5,1)=1;
-
-    matrix b = mops.zeros(6,1);
-    b(0,0)=2;
-    b(1,0)=1;
-    b(2,0)=2;
-    b(3,0)=1;
-    b(4,0)=-1;   
-    b(5,0)=2;
-
-    matrix c = mops.zeros(1,2);
-    c(0,0)=-1;
-    c(0,1)=-1.0/3.0;
-
-    std::vector<ConstraintType> types = {LEQ, LEQ, LEQ, LEQ, LEQ, LEQ};
-
-    //run_test("Klee-Minty cube (2D version)", A, b, c, types);
-    }
-    
 
     {
     Matrix mops;
@@ -212,6 +190,7 @@ int main() {
     A(11,2)=0.80; A(11,8)=-0.30;                 b(11,0)=0;
 
     run_test("Refinery blending optimization (min version)", A, b, c, types);
+    std::cout << "answer from matlabs solver: " << "x^T = [ 15555.5556, 4444.4444, -0.0000, 10000.0000, 0.0000, 10000.0000, 4444.4444, 5555.5556, 0.0000 ], opt_cost = -3270000" << "\n";
     }
     std::cout << "\nALL TESTS COMPLETED!\n";
 
