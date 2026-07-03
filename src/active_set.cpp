@@ -152,7 +152,7 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
 }
 
 
-// helper for edbug
+// helper for debug. move to be part of matrix struct
 bool has_nan(const matrix& A) {
     for (int i = 0; i < A.rows*A.columns; ++i)
         if (std::isnan(A.data[i])) return true;
