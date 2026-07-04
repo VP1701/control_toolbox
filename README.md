@@ -2,12 +2,8 @@
 
 This is my hobby repository for doing control theory related C++ programs.
 
-
-
 ## Currently working on
-- extending matrix class
-- LTV-MPC
-- adding CMake
+- system/plant class for making simulation easier
 
 ## future plans
 - State feedback controller
@@ -16,27 +12,32 @@ This is my hobby repository for doing control theory related C++ programs.
 - Kalman predictor
 - Kalman filter
 
-## MPC solver for Linear time invariant MIMO systems
-compile code:
-```g++ -O2 -Iinclude tests/mpc_test.cpp src/simplex.cpp src/matrix.cpp src/active_set.cpp src/mpc.cpp -o test_mpc```
+## Building tests
+
+This project uses CMake. From the repo root:
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+This builds `simplex_test`, `active_set_test`, and `mpc_test` into the `build/` folder. 
+
+### MPC solver for Linear time invariant MIMO systems
 run the code:
-```./test_mpc```
+```
+./mpc_test
+```
 
-## Active set algorithm
-compile code:
-```g++ -O2 -Iinclude tests/test_active_set.cpp src/simplex.cpp src/matrix.cpp src/active_set.cpp -o test_active_set```
+### Active set algorithm
 run the code:
-```./test_active_set```
+```
+./active_set_test
+```
 
-
-## Simplex algorithm
-
-
-For testing the solver you need to clone the repo, have C++ and g++ installed. After that you can run the test with these commands:
-
-compile code:
-```g++ -O2 -Iinclude tests/test_simplex.cpp src/simplex.cpp src/matrix.cpp -o test_simplex```
+### Simplex algorithm
 run the code:
-```./test_simplex```
-
-
+```
+./simplex_test
+```
