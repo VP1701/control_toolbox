@@ -30,8 +30,6 @@ run the code:
 
 
 ## Simplex algorithm
-
-
 For testing the solver you need to clone the repo, have C++ and g++ installed. After that you can run the test with these commands:
 
 compile code:
