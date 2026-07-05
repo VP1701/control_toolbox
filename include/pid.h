@@ -70,6 +70,8 @@ class PidPositional {
         double T_aw; // Antiwindup gain  
         double I = 0.0;
         double D = 0.0;
+        double u_low;               // Lower bound for antiwindup control clamping
+        double u_high;              // Upper bound for antiwindup control clamping
 };
 
 
