@@ -1,7 +1,9 @@
 # Control Toolbox (C++)
 
-This is my hobby repository for doing control theory related C++ programs.
-
+This is my personal passion project C++ library for modern control and optimization algorithms. The goal of this repository is to learn
+control theory and optimization and the implementation of these in C++. I am building the algorithms from scratch myself to learn how they work.
+The rule for this project is to never use any other external libraries than the C++ standard library. The goal is that the developed algorithms are
+robust and efficient enough to be used in real-world aplications.
 ## Key Features
 - Model Predictive Control (MPC): Formulated for Linear TIme-invariant (LTI) MIMO systems. Supports Linear and Quadratic cost functions.
 - Custom optimization algorithms
