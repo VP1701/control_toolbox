@@ -2,42 +2,36 @@
 #include "pid.h"
 #include <algorithm>
 
-Pid::Pid(double kp, double kd, double ki, double h, ControlMethod method,
-         bool antiwindup, double u_low, double u_high, double Kh)
-        : K_p(kp), K_d(kd), K_i(ki), h(h), u(0.0), diff_e(0.0), e_last(0.0),
-         e_last_last(0.0), u_last(0.0), a0(0.0), a1(0.0), a2(0.0),
-        u_low(u_low), u_high(u_high), aw(0.0), K_h(Kh), method(method), antiwindup(antiwindup) {
-            calculate_pid_coefficients(); // Initializes coefficients
+PidVelocity::PidVelocity(double K_p, double K_d, double K_i, double h, ControlMethod method,
+         bool antiwindup, double u_low, double u_high)
+        : K_p(K_p), K_d(K_d), K_i(K_i), h(h),
+          u_low(u_low), u_high(u_high), method(method), antiwindup(antiwindup) {
+            calculate_coefficients(); // Initializes coefficients
         }
 
 
-    double Pid::calculate_control(double e) {
+    double PidVelocity::calculate_control(double e) {
 
+        double u = u_last + a0 * e + a1 * e_last + a2 * e_last_last;
+        
+        // clamp control
         if(antiwindup){
-            aw = h * K_h * (v_last - u_last_last);
+            double v = std::clamp(u, u_low, u_high);
+            u_last = v;
         } else {
-            aw = 0.0;
+            double v = u;
+            u_last = v;
         }
-        u = u_last + a0 * e + a1 * e_last + a2 * e_last_last + aw;
-     
+        
+        // store old states
         e_last_last = e_last;
         e_last = e;
-        u_last_last = u_last;
-        u_last = u;
         
-
-        if(antiwindup){
-            v_last = v;
-            
-            v = std::clamp(u, u_low, u_high);
-        } else {
-            v = u;
-        }
         
-        return v;
+        return u_last;
     }
 
-    void Pid::calculate_pid_coefficients() {
+    void PidVelocity::calculate_coefficients() {
         switch (method){
             case ControlMethod::Backward_Euler:
                 a0 = K_p + K_i * h + K_d / h; 
@@ -58,8 +52,54 @@ Pid::Pid(double kp, double kd, double ki, double h, ControlMethod method,
                 a2 = K_d /h;
                 break;
         }
+    }
 
+    void PidVelocity::reset() {
+        e_last_last = 0.0;
+        e_last = 0.0;
+        u_last = 0.0;
     }
 
     
-    
+
+PidPositional::PidPositional(double K_p, double K_i, double K_d, double h,
+            double u_low, double u_high, double T_f, double T_aw, double beta)
+            : K_p(K_p), K_d(K_d), K_i(K_i), h(h),
+              u_low(u_low), u_high(u_high),
+              T_f(T_f), T_aw(T_aw), beta(beta) {
+                calculate_coefficients();
+            }
+
+    double PidPositional::calculate_control(double r, double y) {
+
+        if (first_iter) {
+            y_last = y;
+            first_iter = false;
+        }
+        
+        double P = K_p * (beta * r - y);
+        D = ad * D - bd * (y-y_last);
+
+        double u = P + I + D ;
+        double v = std::clamp(u, u_low, u_high);
+
+        I = I + bi * (r - y) + br * (v - u);
+        y_last = y;
+
+        return v;
+    }
+
+    void PidPositional::calculate_coefficients() {
+        bi = K_i * h;
+        ad = T_f / (T_f + h); 
+        bd = K_d / (T_f + h);
+        br = h / T_aw;
+    }
+
+
+    void PidPositional::reset() {
+        first_iter = true;
+        y_last = 0.0;
+        D = 0.0;
+        I = 0.0;
+    }
