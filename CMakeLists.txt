@@ -26,3 +26,6 @@ target_link_libraries(mpc_test PRIVATE control_toolbox)
 
 add_executable(active_set_test tests/test_active_set.cpp)
 target_link_libraries(active_set_test PRIVATE control_toolbox)
+
+add_executable(pid_test tests/pid_test.cpp)
+target_link_libraries(pid_test PRIVATE control_toolbox)
