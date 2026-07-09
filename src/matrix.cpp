@@ -189,6 +189,45 @@ matrix Matrix::lin_solve(const matrix& A, const matrix& b) {
     return x;
 }
 
+matrix Matrix::lin_solve_LU(const matrix& A, const matrix& b) {
+    int n = b.rows;
+    matrix b_perm = b;
+
+    matrix x(n,1);
+    matrix y(n,1);
+    
+    LUResult result = A.LU();
+    matrix& LU_mat = result.LU;
+    int rows = LU_mat.rows;
+    std::vector<int> permutations = result.permutations;
+
+    // swap rows of b to match LU decomposition permutations
+    for (int i = 0;i < n; ++i) {
+        b_perm(i, 0) = b(permutations[i], 0);
+    }
+    double sum;
+    // solve L*y = b
+    for (int i = 0; i < n; ++i) {
+        sum = 0.0;
+        for (int j = 0; j < i; ++j) {
+            sum += y(j, 0) * LU_mat(i, j);
+        }
+        y(i, 0) = b_perm(i, 0) - sum;
+        
+    }
+
+    // solve U*x = y
+    for (int i = n - 1; i >= 0; --i) {
+        sum = 0.0;
+        for (int j = n - 1; j > i; --j) {
+            sum += LU_mat(i, j) * x(j, 0);
+        }
+        x(i, 0) = ( y(i, 0) - sum ) / LU_mat(i, i);
+    }
+
+    return x;
+}
+
 matrix Matrix::lin_solve_chol(const matrix& L, const matrix& b) {
     // solve x from A*x=b using precomputed cholesky decomposition L
     

@@ -4,6 +4,10 @@
 
 #include <iostream>
 #include <cmath> // for sqrt
+#include <vector>
+#include <stdexcept>
+
+struct LUResult;
 
 struct matrix {
     int rows;
@@ -118,39 +122,8 @@ struct matrix {
         return smallest;
     }
 
-
+    LUResult LU() const;
     
-
-    matrix LU() const {
-        matrix LU = *this;
-        //matrix P = Matrix.eye(columns);
-
-        for (int i = 0; i < columns; ++i) {
-            int max_val_row = i;
-            double max_val = std::abs(data[max_val_row * columns + i]);
-            for (int j = i + 1; j < rows; ++j) {
-                double val = std::abs(data[j * columns + i]);
-                if (val>max_val) {
-                    max_val = val;
-                    max_val_row = i;
-                }
-            } 
-            
-            // check singularity
-            if (std::abs(data[max_val_row * columns + i]) < 1e-12) {
-                std::cout << "Matrix is singular. cannot LU decompose" << "\n";
-            }
-
-            LU.swap_rows(i, max_val_row);
-        }
-
-        return LU;
-    }
-
-    
-
-
-
     matrix chol() const {
         matrix L(rows, columns);
 
@@ -207,10 +180,10 @@ struct matrix {
         return *this;
     }
 
-    matrix& add_multiple_of_row(int dest_row, int src_row, double scalar) {
+    matrix& add_multiple_of_row(int dest_row, int src_row, double scalar, int start_column = 0) {
         if (scalar == 0.0) return *this;
         
-        for (int i = 0; i < columns; ++i) {
+        for (int i = start_column; i < columns; ++i) {
             data[dest_row * columns + i] += data[src_row * columns + i] * scalar;
         }
 
@@ -284,6 +257,11 @@ struct matrix {
 
 };
 
+struct LUResult {
+    matrix LU;
+    std::vector<int> permutations;
+};
+
 class Matrix {
     public:
         // elementary row operations
@@ -302,6 +280,7 @@ class Matrix {
         matrix backslash(const matrix& A, const matrix& B);
         matrix backslash_chol(const matrix& L, const matrix& B);
         matrix lin_solve(const matrix& A, const matrix& b);
+        matrix lin_solve_LU(const matrix& A, const matrix& b);
         matrix lin_solve_chol(const matrix& L, const matrix& b);
         matrix chol_rank1_update(const matrix& L_M, const matrix& z, double beta);
         
@@ -314,6 +293,7 @@ class Matrix {
         matrix get_column(const matrix& A, int n);
         matrix get_row(const matrix& A, int n);
 };
+
 
 inline matrix operator*(const matrix& A, const matrix& B) {
     Matrix mops;
@@ -329,4 +309,51 @@ inline matrix operator-(const matrix& A, const matrix& B) {
     Matrix mops;
     return mops.subtraction(A, B);
 }
+
+inline LUResult matrix::LU() const {
+    matrix LU = *this;
+
+    if (rows != columns) {
+        throw std::runtime_error("Matrix must be square to LU decompose.");
+        }
+
+    std::vector<int> permutations(rows); 
+    // Fill permutations vector with row indices
+    for (int k = 0; k < rows; ++k) {
+        permutations[k] = k;
+    }
+    // Find the largest (absolute) value in a column.
+    
+    for (int i = 0; i < columns; ++i) {
+        int max_val_row = i;
+        double max_val = std::abs(LU(max_val_row, i));
+        for ( int j = i + 1; j < rows; ++j) {
+            double val = std::abs(LU(j, i));
+            if (val > max_val) {
+                max_val = val;
+                max_val_row = j;
+            }
+        }
+        // Check for singularity. prvent division by zero
+        if (max_val < 1e-12) {
+            throw std::runtime_error("Matrix is singular, cannot LU decompose.");
+        }
+        // Swap largest value to the diagonal by doing a row permutation
+        LU.swap_rows(max_val_row, i);
+        std::swap(permutations[max_val_row], permutations[i]);
+
+        // zero out everything below diagonal
+        // go through all of the rows below diagonal 
+        // and multiply them by m times diagonal row
+        for (int j = i + 1;j < rows; ++j) {
+            // LU(j,i) - m * L(i,i) = 0 --> m = LU(j,i) / L(i,i)
+            double m = LU(j, i) / LU(i, i);
+            LU.add_multiple_of_row(j, i, -m, i);
+            LU(j, i) = m;
+        }
+    }
+
+    return {LU, permutations};
+}
+
 #endif // MATRIX_H
