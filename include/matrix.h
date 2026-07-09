@@ -122,6 +122,8 @@ struct matrix {
         return smallest;
     }
 
+    LUResult LU() const;
+    
     matrix chol() const {
         matrix L(rows, columns);
 
@@ -178,10 +180,10 @@ struct matrix {
         return *this;
     }
 
-    matrix& add_multiple_of_row(int dest_row, int src_row, double scalar) {
+    matrix& add_multiple_of_row(int dest_row, int src_row, double scalar, int start_column = 0) {
         if (scalar == 0.0) return *this;
         
-        for (int i = 0; i < columns; ++i) {
+        for (int i = start_column; i < columns; ++i) {
             data[dest_row * columns + i] += data[src_row * columns + i] * scalar;
         }
 
@@ -346,7 +348,7 @@ inline LUResult matrix::LU() const {
         for (int j = i + 1;j < rows; ++j) {
             // LU(j,i) - m * L(i,i) = 0 --> m = LU(j,i) / L(i,i)
             double m = LU(j, i) / LU(i, i);
-            LU.add_multiple_of_row(j, i, -m);
+            LU.add_multiple_of_row(j, i, -m, i);
             LU(j, i) = m;
         }
     }
