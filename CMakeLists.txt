@@ -32,3 +32,6 @@ target_link_libraries(pid_test PRIVATE control_toolbox)
 
 add_executable(lu_test tests/lu_test.cpp)
 target_link_libraries(lu_test PRIVATE control_toolbox)
+
+add_executable(householder_test tests/test_householder.cpp)
+target_link_libraries(householder_test PRIVATE control_toolbox)

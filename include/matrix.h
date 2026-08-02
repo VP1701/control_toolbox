@@ -9,6 +9,8 @@
 
 struct LUResult;
 
+struct HouseholderResult;
+
 struct matrix {
     int rows;
     int columns;
@@ -82,6 +84,16 @@ struct matrix {
         return result;
     }
 
+    double sum_of_squares() const {
+        double sum = 0.0;
+        int iters = rows * columns;
+
+        for (int i = 0; i < iters; i++) {
+            sum += data[i] * data[i];
+        }
+        return sum;
+    }
+
     double L1() const {
         double sum = 0.0;
         int iters = rows * columns;
@@ -93,13 +105,7 @@ struct matrix {
     }
 
     double L2() const {
-        double sum = 0.0;
-        int iters = rows * columns;
-
-        for (int i = 0; i < iters; i++) {
-            sum += std::pow(data[i],2);
-        }
-        return std::sqrt(sum);
+        return std::sqrt(this->sum_of_squares());
     }
 
     double scalar() const {
@@ -109,6 +115,7 @@ struct matrix {
 
         return data[0];
     }
+
 
     double min() const {
         // Returns smalles t element from matrix
@@ -123,6 +130,10 @@ struct matrix {
     }
 
     LUResult LU() const;
+
+    HouseholderResult householder() const;
+
+    HouseholderResult house() const;
     
     matrix chol() const {
         matrix L(rows, columns);
@@ -262,53 +273,13 @@ struct LUResult {
     std::vector<int> permutations;
 };
 
-class Matrix {
-    public:
-        // elementary row operations
-        matrix swap_rows(matrix& A, int row1, int row2);
-        matrix multiply_row(matrix& A, int row, double scalar);
-        matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
-
-        // functions for creating matrices
-        matrix lower_toeplitz_I(int T_size, int block_size);
-        matrix create_block_diagonal(const matrix& A, int n_blocks);
-        matrix diag(const matrix& A);
-        matrix eye(int n);
-        matrix zeros(int r, int c);
-        matrix ones(int r, int c);
-
-        matrix backslash(const matrix& A, const matrix& B);
-        matrix backslash_chol(const matrix& L, const matrix& B);
-        matrix lin_solve(const matrix& A, const matrix& b);
-        matrix lin_solve_LU(const matrix& A, const matrix& b);
-        matrix lin_solve_chol(const matrix& L, const matrix& b);
-        matrix chol_rank1_update(const matrix& L_M, const matrix& z, double beta);
-        
-        void print(const matrix& A);
-        matrix multiply(const matrix& A, const matrix& B);
-        matrix addition(const matrix& A, const matrix& B);
-        matrix subtraction(const matrix& A, const matrix& B);
-        matrix inverse(const matrix& A);
-        
-        matrix get_column(const matrix& A, int n);
-        matrix get_row(const matrix& A, int n);
+struct HouseholderResult {
+    matrix v;
+    double beta;
+    double alpha;
 };
 
 
-inline matrix operator*(const matrix& A, const matrix& B) {
-    Matrix mops;
-    return mops.multiply(A, B);
-}
-
-inline matrix operator+(const matrix& A, const matrix& B) {
-    Matrix mops;
-    return mops.addition(A, B);
-}
-
-inline matrix operator-(const matrix& A, const matrix& B) {
-    Matrix mops;
-    return mops.subtraction(A, B);
-}
 
 inline LUResult matrix::LU() const {
     matrix LU = *this;
@@ -355,5 +326,120 @@ inline LUResult matrix::LU() const {
 
     return {LU, permutations};
 }
+
+inline HouseholderResult matrix::householder() const {
+    
+    // check if column vector
+    if (this->columns > 1) {
+        std::cout << "Cannot make a householder transform, target must be a column vector \n";
+        matrix O(0,0);
+        return {O, 0.0, 0.0};
+    }
+
+    // Calculate L2 norm of x
+    double norm = this->L2(); // could also be just L2()
+
+    if (norm < 1e-6) {
+        std::cout << "Zero vector, nothing to transform \n";
+        matrix O(this->rows, this->columns);
+        return {O, 0.0, 0.0};
+    }
+    // dont know the function for this
+    double sign = std::copysign(1.0, this->data[0]);
+
+    double alpha = -sign * norm;
+
+    matrix v = *this;
+    v(0,0) = v(0,0) - alpha;
+
+    double den = v.sum_of_squares();
+
+    double beta = 2/den;
+
+    return {v, beta, alpha};
+
+}
+
+inline HouseholderResult matrix::house() const {
+    
+    // check if column vector
+    if (this->columns > 1) {
+        std::cout << "Cannot make a householder transform, target must be a column vector \n";
+        matrix O(0,0);
+        return {O, 0.0, 0.0};
+    }
+
+    // Calculate L2 norm of x
+    double norm = this->L2(); // could also be just L2()
+
+    if (norm < 1e-6) {
+        std::cout << "Zero vector, nothing to transform \n";
+        matrix O(this->rows, this->columns);
+        return {O, 0.0, 0.0};
+    }
+    // dont know the function for this
+    double sign = std::copysign(1.0, this->data[0]);
+
+    double alpha = -sign * norm;
+
+    matrix v = *this;
+
+    double beta = this->data[0] + sign * norm;
+    for (int i = 1; i < this->rows; i++) {
+        v(i,0) = v(i,0) / beta;
+    }
+    v(0,0) = 1.0;
+
+    return {v, beta, alpha};
+
+}
+
+class Matrix {
+    public:
+        // elementary row operations
+        matrix swap_rows(matrix& A, int row1, int row2);
+        matrix multiply_row(matrix& A, int row, double scalar);
+        matrix add_multiple_of_row(matrix& A, int dest, int src, double scalar);
+
+        // functions for creating matrices
+        matrix lower_toeplitz_I(int T_size, int block_size);
+        matrix create_block_diagonal(const matrix& A, int n_blocks);
+        matrix diag(const matrix& A);
+        matrix eye(int n);
+        matrix zeros(int r, int c);
+        matrix ones(int r, int c);
+
+        matrix backslash(const matrix& A, const matrix& B);
+        matrix backslash_chol(const matrix& L, const matrix& B);
+        matrix lin_solve(const matrix& A, const matrix& b);
+        matrix lin_solve_LU(const matrix& A, const matrix& b);
+        matrix lin_solve_chol(const matrix& L, const matrix& b);
+        matrix chol_rank1_update(const matrix& L_M, const matrix& z, double beta);
+        
+        void print(const matrix& A);
+        matrix multiply(const matrix& A, const matrix& B);
+        matrix addition(const matrix& A, const matrix& B);
+        matrix subtraction(const matrix& A, const matrix& B);
+        matrix inverse(const matrix& A);
+        
+        matrix get_column(const matrix& A, int n);
+        matrix get_row(const matrix& A, int n);
+};
+
+inline matrix operator*(const matrix& A, const matrix& B) {
+    Matrix mops;
+    return mops.multiply(A, B);
+}
+
+inline matrix operator+(const matrix& A, const matrix& B) {
+    Matrix mops;
+    return mops.addition(A, B);
+}
+
+inline matrix operator-(const matrix& A, const matrix& B) {
+    Matrix mops;
+    return mops.subtraction(A, B);
+}
+
 
 #endif // MATRIX_H
