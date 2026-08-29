@@ -6,6 +6,7 @@
 #include <cmath> // for sqrt
 #include <vector>
 #include <stdexcept>
+#include <cassert>
 
 struct LUResult;
 
@@ -32,6 +33,13 @@ struct matrix {
         for (int i = 0; i < rows * columns; ++i) {
             data[i] = other.data[i];
         }
+    }
+    //move constructor
+    matrix(matrix&& other) noexcept
+        : rows(other.rows), columns(other.columns), data(other.data) {
+        other.data = nullptr;
+        other.rows = 0;
+        other.columns = 0;
     }
 
     // copy matrix operator
@@ -172,9 +180,7 @@ struct matrix {
 
     matrix& swap_rows(int row_ind1, int row_ind2) {
         // Check that indices are different
-        if (row_ind1 == row_ind2) {
-            throw std::runtime_error("Row indexes are the same. Nothing to swap");
-        } 
+        if (row_ind1 == row_ind2) return *this;
 
         if (row_ind1 >= rows) {
             throw std::runtime_error("Row index exeeds amount of rows");
@@ -225,13 +231,15 @@ struct matrix {
     }
 
     double& operator()(int r, int c) {
+        // TODO: add dimension check
         return data[r * columns + c];
     }
 
     double operator()(int r, int c) const {
+        // TODO: add dimension check
         return data[r * columns + c];
     }
-
+    /*
     matrix operator * (const matrix& B) const {
         if (columns != B.rows) {
             throw std::runtime_error("Dimension don't match for multiplication");
@@ -247,9 +255,10 @@ struct matrix {
         }
         return result;
     }
+    */
     
     // trick to make scalar multiplication work. but need to always m,ultiply from the right :(
-
+    
     matrix operator * (double scalar) const {
         matrix result(rows, columns);
         for (int i = 0; i < rows * columns; ++i) {
@@ -257,7 +266,7 @@ struct matrix {
         }
         return result;
     }
-
+    /*
     matrix operator + (const matrix& B) const {
         if (columns != B.columns || rows != B.rows) {
             throw std::runtime_error("Dimension don't match for addition");
@@ -284,6 +293,7 @@ struct matrix {
         }
         return result;
     }
+    */
 
 };
 
@@ -341,11 +351,12 @@ inline matrix operator-(const matrix& A, const matrix& B) {
 }
 
 inline LUResult matrix::LU() const {
-    matrix LU = *this;
-
     if (rows != columns) {
         throw std::runtime_error("Matrix must be square to LU decompose.");
     }
+    matrix LU = *this;
+
+    
 
     std::vector<int> permutations(rows); 
     // Fill permutations vector with row indices
@@ -353,7 +364,7 @@ inline LUResult matrix::LU() const {
         permutations[k] = k;
     }
     // Find the largest (absolute) value in a column.
-    
+    const double tol = L2() * 1e-9;
     for (int i = 0; i < columns; ++i) {
         int max_val_row = i;
         double max_val = std::abs(LU(max_val_row, i));
@@ -364,8 +375,9 @@ inline LUResult matrix::LU() const {
                 max_val_row = j;
             }
         }
+
         // Check for singularity. prvent division by zero
-        if (max_val < 1e-12) {
+        if (max_val < tol) {
             throw std::runtime_error("Matrix is singular, cannot LU decompose.");
         }
         // Swap largest value to the diagonal by doing a row permutation
