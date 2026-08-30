@@ -108,7 +108,6 @@ matrix MPC::construct_H(const matrix& A,const matrix& B, const matrix& C, int ho
                 //mops.print(CA);
             }
             
-            
             matrix cumsum = CA * B;
             //std::cout << "cumsum: " << "\n";
             //mops.print(cumsum);
@@ -564,6 +563,7 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
         // Initialize simplex solver 
         matrix dummy_b = mops.zeros(A_simp.rows, 1);
         lp_solver = new Simplex(A_simp, dummy_b, c_T, constraint_types);
+
     } else if (solver_type == QP) {
         int u_rows = h * nu;
         matrix T_u = mops.lower_toeplitz_I(u_rows, nu);
@@ -578,9 +578,7 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
         matrix dummy_b_constraint = mops.zeros(A_constraint.rows, 1);
         qp_solver = new Active_Set(Q, dummy_g, A_qp, dummy_b_constraint);
     }
-    
 }
-
 
 MPC::~MPC() {
     if (solver_type == LP) {
