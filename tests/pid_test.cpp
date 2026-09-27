@@ -107,46 +107,51 @@ void run_simulation_positional(PidPositional& controller, const matrix& A, const
 }
 
 int main() {
-    int nx = 2;
-    int nu = 1;
-    int sim_steps = 150;
-    double h = 1.0; // sample time, matches the MPC's sample time
+        try {
+        int nx = 2;
+        int nu = 1;
+        int sim_steps = 150;
+        double h = 1.0; // sample time, matches the MPC's sample time
 
-    matrix A(nx, nx);
-    A(0, 0) = 0.9002;  A(0, 1) = -0.095;
-    A(1, 0) = 0.095;   A(1, 1) = 0.9952;
+        matrix A(nx, nx);
+        A(0, 0) = 0.9002;  A(0, 1) = -0.095;
+        A(1, 0) = 0.095;   A(1, 1) = 0.9952;
 
-    matrix B(nx, nu);
-    B(0, 0) = 0.095;
-    B(1, 0) = 0.004833;
+        matrix B(nx, nu);
+        B(0, 0) = 0.095;
+        B(1, 0) = 0.004833;
 
-    matrix x0 = mops.zeros(nx, 1);
+        matrix x0 = mops.zeros(nx, 1);
 
-    double u_low = -25.0;
-    double u_high = 25.0;
+        double u_low = -25.0;
+        double u_high = 25.0;
 
-    const std::string out_dir = "control_toolbox/test_results";
-    std::filesystem::create_directories(out_dir);
+        const std::string out_dir = "control_toolbox/test_results";
+        std::filesystem::create_directories(out_dir);
 
-    std::cout << "=== Building PidVelocity controller ===\n";
-    PidVelocity vel_controller(
-        /*K_p=*/0.5, /*K_d=*/0.0, /*K_i=*/0.05, /*h=*/h,
-        ControlMethod::Tustin, /*antiwindup=*/true, u_low, u_high);
-    std::cout << "Running PidVelocity simulation...\n";
-    run_simulation_velocity(vel_controller, A, B, x0, sim_steps, u_low, u_high,
-                             (out_dir + "/results_PID_velocity.csv").c_str());
-    std::cout << "PidVelocity done. Results saved to " << out_dir << "/results_PID_velocity.csv\n\n";
+        std::cout << "=== Building PidVelocity controller ===\n";
+        PidVelocity vel_controller(
+            /*K_p=*/0.5, /*K_d=*/0.0, /*K_i=*/0.05, /*h=*/h,
+            ControlMethod::Tustin, /*antiwindup=*/true, u_low, u_high);
+        std::cout << "Running PidVelocity simulation...\n";
+        run_simulation_velocity(vel_controller, A, B, x0, sim_steps, u_low, u_high,
+                                (out_dir + "/results_PID_velocity.csv").c_str());
+        std::cout << "PidVelocity done. Results saved to " << out_dir << "/results_PID_velocity.csv\n\n";
 
-    std::cout << "=== Building PidPositional controller ===\n";
-    PidPositional pos_controller(
-        /*K_p=*/1.0, /*K_i=*/0.05, /*K_d=*/0.05, /*h=*/h,
-        u_low, u_high, /*T_f=*/1.0, /*T_aw=*/1.0, /*beta=*/1.0);
-    std::cout << "Running PidPositional simulation...\n";
-    run_simulation_positional(pos_controller, A, B, x0, sim_steps,
-                               (out_dir + "/results_PID_positional.csv").c_str());
-    std::cout << "PidPositional done. Results saved to " << out_dir << "/results_PID_positional.csv\n\n";
+        std::cout << "=== Building PidPositional controller ===\n";
+        PidPositional pos_controller(
+            /*K_p=*/1.0, /*K_i=*/0.05, /*K_d=*/0.05, /*h=*/h,
+            u_low, u_high, /*T_f=*/1.0, /*T_aw=*/1.0, /*beta=*/1.0);
+        std::cout << "Running PidPositional simulation...\n";
+        run_simulation_positional(pos_controller, A, B, x0, sim_steps,
+                                (out_dir + "/results_PID_positional.csv").c_str());
+        std::cout << "PidPositional done. Results saved to " << out_dir << "/results_PID_positional.csv\n\n";
 
-    std::cout << "Both PID simulations complete. Compare " << out_dir << "/results_PID_velocity.csv, "
-              << out_dir << "/results_PID_positional.csv and your MPC results.\n";
-    return 0;
+        std::cout << "Both PID simulations complete. Compare " << out_dir << "/results_PID_velocity.csv, "
+                << out_dir << "/results_PID_positional.csv and your MPC results.\n";
+        return 0;
+    } catch (const std::exception& e){
+            std::cerr << "EXCEPTION: " << e.what() << "\n";
+            return 1;
+    }
 }

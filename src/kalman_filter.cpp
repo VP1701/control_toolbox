@@ -11,44 +11,44 @@ KalmanFilter::KalmanFilter(const matrix& A, const matrix& B, const matrix& C,
                             }
 
 
-    KalmanStatus KalmanFilter::init() {
+    Status KalmanFilter::init() {
         if (A.rows != A.columns || A.rows != B.rows || C.columns != nx ||
             x_hat.rows != nx || P.rows != P.columns || P.rows != nx ||
             Q.rows != nx || R.rows != ny || x_hat.columns != 1) {
-            return KalmanStatus::DimensionMismatch;
+            return Status::DimensionMismatch;
         }
 
-        return KalmanStatus::Ok;
+        return Status::Ok;
     }
    
 
-    KalmanStatus KalmanFilter::step(const matrix& z, const matrix& u, matrix& y_hat) {
-        KalmanStatus s = predict(u);
-        if (s != KalmanStatus::Ok) {
+    Status KalmanFilter::step(const matrix& z, const matrix& u, matrix& y_hat) {
+        Status s = predict(u);
+        if (s != Status::Ok) {
             return s;
         }
         return update(z, y_hat);
     }
 
-    KalmanStatus KalmanFilter::predict(const matrix& u) {
-        if (status_ != KalmanStatus::Ok) {
-            return KalmanStatus::NotInitialized;
+    Status KalmanFilter::predict(const matrix& u) {
+        if (status_ != Status::Ok) {
+            return Status::NotInitialized;
         }
         if (u.rows != nu) {
-            return KalmanStatus::DimensionMismatch;
+            return Status::DimensionMismatch;
         }
         x_hat = A * x_hat + B * u;
         P = (A * P * A.T() + Q);
-        return KalmanStatus::Ok;
+        return Status::Ok;
     }
 
-    KalmanStatus KalmanFilter::update(const matrix& z, matrix& y_hat) {
-        if (status_ != KalmanStatus::Ok) {
-            return KalmanStatus::NotInitialized;
+    Status KalmanFilter::update(const matrix& z, matrix& y_hat) {
+        if (status_ != Status::Ok) {
+            return Status::NotInitialized;
         }
         if (z.rows != ny || y_hat.rows != ny || z.columns != 1 ||
             y_hat.columns != 1) {
-            return KalmanStatus::DimensionMismatch;
+            return Status::DimensionMismatch;
         }
         matrix innovation = z - C * x_hat;
         matrix S = C * P * C.T() + R;
@@ -56,6 +56,6 @@ KalmanFilter::KalmanFilter(const matrix& A, const matrix& B, const matrix& C,
         x_hat = x_hat + K * innovation;
         P = (I - K * C) * P; // TODO: make more robust update
         y_hat = z - C * x_hat;
-        return KalmanStatus::Ok;
+        return Status::Ok;
         
     }

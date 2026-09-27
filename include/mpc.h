@@ -6,6 +6,8 @@
 #include "matrix.h"
 #include "simplex.h"
 #include "active_set.h"
+#include "status.hpp"
+
 #include <iostream>
 #include <vector> // needed for constraint type vector
 
@@ -88,7 +90,6 @@ class MPC {
         matrix W_x_block;
         matrix A_qp;
         matrix b_qp;
-
 
         matrix du;
 

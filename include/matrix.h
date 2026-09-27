@@ -115,7 +115,6 @@ struct matrix {
             throw std::runtime_error("Matrix must be 1x1 to extract to scalar");
         }
         
-
         return data[0];
     }
 
@@ -334,7 +333,6 @@ class Matrix {
         matrix get_row(const matrix& A, int n);
 };
 
-
 inline matrix operator*(const matrix& A, const matrix& B) {
     Matrix mops;
     return mops.multiply(A, B);
@@ -356,13 +354,12 @@ inline LUResult matrix::LU() const {
     }
     matrix LU = *this;
 
-    
-
     std::vector<int> permutations(rows); 
     // Fill permutations vector with row indices
     for (int k = 0; k < rows; ++k) {
         permutations[k] = k;
     }
+
     // Find the largest (absolute) value in a column.
     const double tol = L2() * 1e-9;
     for (int i = 0; i < columns; ++i) {

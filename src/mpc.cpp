@@ -462,7 +462,11 @@ matrix MPC::solve(const matrix& measurement, const matrix& reference) {
         qp_solver->reset(b_qp, c);
         qp_solver->solve();
         
-        du = qp_solver->return_solution();
+        matrix du_full = qp_solver->return_solution();
+        du = matrix(nu, 1);
+        for (int i = 0; i < nu; ++i) {
+            du(i, 0) = du_full(i, 0);
+        }
     }
 
 

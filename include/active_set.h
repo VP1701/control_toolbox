@@ -3,10 +3,13 @@
 #ifndef ACTIVE_SET_H
 #define ACTIVE_SET_H
 
+#include "matrix.h"
+#include "simplex.h"
+#include "status.hpp"
+
+
 #include <iostream>
 #include <chrono>
-#include <matrix.h>
-#include "simplex.h"
 #include <vector>
 #include <set>
 
@@ -48,11 +51,12 @@ class Active_Set {
         int max_iters = 500;
 
     public:
-        void solve_kkt(const matrix& g, const matrix& A);
-        void initialize_QP();
-        void solve();
-        void reset(const matrix& b, const matrix& c_new);
-        matrix return_solution();
+        Status solve_kkt(const matrix& g, const matrix& A);
+        Status initialize_QP();
+        Status solve();
+        Status init();
+        Status reset(const matrix& b, const matrix& c_new);
+        matrix return_solution() const { return x; }
         Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, const matrix& b_ineq);
         ~Active_Set();
 

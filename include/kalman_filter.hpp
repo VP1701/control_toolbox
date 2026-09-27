@@ -4,8 +4,8 @@
 #define KALMAN_FILTER_H
 
 #include "matrix.h"
+#include "status.hpp"
 
-enum class [[nodiscard]] KalmanStatus { Ok, DimensionMismatch, NotPosDef, NotInitialized};
 
 class KalmanFilter {
     private:
@@ -14,7 +14,7 @@ class KalmanFilter {
         int ny;
         int nu;
 
-        KalmanStatus status_ = KalmanStatus::NotInitialized; 
+        Status status_ = Status::NotInitialized; 
 
         matrix A;
         matrix B;
@@ -26,19 +26,19 @@ class KalmanFilter {
 
         matrix x_hat;
 
-        KalmanStatus init();
+        Status init();
     
     public:
 
         // Getters
         matrix state() const { return x_hat; }
         matrix covariance() const { return P; }
-        KalmanStatus status() const { return status_; }
+        Status status() const { return status_; }
         
-        KalmanStatus predict(const matrix& u);
-        KalmanStatus update(const matrix& z, matrix& y_hat);
+        Status predict(const matrix& u);
+        Status update(const matrix& z, matrix& y_hat);
 
-        KalmanStatus step(const matrix& z, const matrix& u, matrix& y_hat);
+        Status step(const matrix& z, const matrix& u, matrix& y_hat);
         KalmanFilter(const matrix& A, const matrix& B, const matrix& C,
                          const matrix& Q, const matrix& R, const matrix& P, const matrix& x_hat);
 

@@ -20,7 +20,7 @@ matrix Active_Set::get_active_rows(const matrix& A, const std::set<int>& ws) {
     return A_W;
 };
 
-void Active_Set::initialize_QP() {
+Status Active_Set::initialize_QP() {
     // the first feasible solution can be found using the simplex method (fletcher s 162)
     delete solver;
     solver = nullptr;
@@ -61,7 +61,7 @@ void Active_Set::initialize_QP() {
 
     if (r.L1() > tol) {
         //std::cout << "No feasible starting point for the QP. Reformulate!" << "\n";
-        return;
+        return Status::Infeasible;
     } 
 
     // extract x
@@ -83,7 +83,7 @@ void Active_Set::initialize_QP() {
             active_set.insert(i);
         } else if (w_residual < -tol) {
             //std::cout << "The problem is infeasible" << "\n";
-            return;
+            return Status::Infeasible;
         }
     }
 
@@ -96,15 +96,11 @@ void Active_Set::initialize_QP() {
         L_M = matrix(0, 0);
     }
 
-    std::cout << "QP initialized \n";
+    return Status::Ok;
     
 };
 
-matrix Active_Set::return_solution() {
-    return x;
-}
-
-void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
+Status Active_Set::solve_kkt(const matrix& g, const matrix& A) {
     /*
     solves KKT system using the Schur complement method
 
@@ -149,6 +145,8 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
     matrix rhs_p = (g + A.T() * lamda) * (-1.0);
     p = mops.lin_solve_chol(L_Q, rhs_p);
 
+    return Status::Ok;
+
 }
 
 
@@ -159,7 +157,7 @@ bool has_nan(const matrix& A) {
     return false;
 }
 
-void Active_Set::solve() {
+Status Active_Set::solve() {
     
     for (int i = 0; i < max_iters; i++) {
         matrix A_W = get_active_rows(A, active_set);
@@ -180,7 +178,7 @@ void Active_Set::solve() {
         // check if ||p|| = 0
 
         if (p.L2() < tol) {
-            if (active_set.empty()) return;
+            if (active_set.empty()) return Status::Ok;
             // all lamda must be non-negative
             bool not_optimal = false;
             for (int k = 0; k < lamda.rows; k++) {
@@ -214,7 +212,7 @@ void Active_Set::solve() {
                 }*/
                 continue;
             } else {
-                return;
+                return Status::Ok;;
             }
         }
 
@@ -251,20 +249,21 @@ void Active_Set::solve() {
 
         x = x + p * alpha;
     }
-
+    return Status::IterationCountReached;
     //std::cout << "Maximum number of iteraions reached. Solution not optimal!" << "\n";
 }
 
-void Active_Set::reset(const matrix& b, const matrix& c_new) {
-   
+Status Active_Set::reset(const matrix& b, const matrix& c_new) {
+    Status s = Status::DimensionMismatch;
     this->b = b;
     this->c = c_new;
     active_set.clear();
     for (int i = 0; i < A.rows; i++) {
         double res = (A.get_row(i) * x - b.get_row(i)).scalar();
         if ( res < -tol) {
-            initialize_QP();
-            return;
+            
+            s = initialize_QP();
+            return s;
         }
         if (std::abs(res) < tol) {
             active_set.insert(i);
@@ -279,11 +278,28 @@ void Active_Set::reset(const matrix& b, const matrix& c_new) {
     } else {
         L_M = matrix(0, 0);
     }
+    return Status::Ok;
 
 }
 
-Active_Set::Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, const matrix& b_ineq) {
+Status Active_Set::init() {
+    if (A.rows != b.rows || Q.rows != c.rows || c.columns != 1 || b.columns != 1) {
+        return Status::DimensionMismatch;
+    }
+    
     solver = nullptr;
+    Q_inv = mops.inverse(Q);
+    L_Q = Q.chol();
+
+    return Status::Ok;
+}
+
+Active_Set::Active_Set(const matrix& Q, const matrix& c,
+                       const matrix& A_ineq, const matrix& b_ineq)
+                       : n(Q.rows), x(mops.zeros(Q.rows, 1)), Q(Q),
+                       A(A_ineq), b(b_ineq), n_const(A.rows), c(c) {
+    
+    /*
     n = Q.rows;
     x = mops.zeros(n, 1); // solution vector
     this->Q = Q;
@@ -293,8 +309,11 @@ Active_Set::Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, c
     n_const = A.rows;
     this->c = c;
     L_Q = Q.chol();
-
-    initialize_QP();
+    */
+    Status s = init();
+    if (s == Status::Ok)  {
+        s = initialize_QP();
+    }
 
 }
 
