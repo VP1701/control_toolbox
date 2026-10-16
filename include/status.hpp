@@ -3,6 +3,8 @@
 #ifndef STATUS_HPP
 #define STATUS_HPP
 
+#include <iostream>
+
 enum class [[nodiscard]] Status {
     Ok,
     DimensionMismatch, 
@@ -10,7 +12,17 @@ enum class [[nodiscard]] Status {
     NotInitialized, 
     IterationCountReached, 
     NumericalError,
-    Infeasible
+    Infeasible,
+    FileError,    
+    ParseError,   
+    NotFound      
 };
 
+
+inline void status_check(Status status) {
+    if (status != Status::Ok) {
+        std::cout << "Status not ok" << "\n";
+    }
+}
 #endif
+

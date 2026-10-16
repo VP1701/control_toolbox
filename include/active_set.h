@@ -33,6 +33,7 @@ class Active_Set {
         matrix L_Q;
         matrix L_M;
         matrix z;
+        int iters;
 
         // residual for checking if constraint belongs to active set
         double w_residual = 0.0;
@@ -55,8 +56,11 @@ class Active_Set {
         Status initialize_QP();
         Status solve();
         Status init();
-        Status reset(const matrix& b, const matrix& c_new);
+        Status reset(const matrix& b_new, const matrix& c_new);
+        Status set_initial_guess(const matrix& x_init);
+        Status is_feasible() const;
         matrix return_solution() const { return x; }
+        int return_iters() const { return iters; }
         Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, const matrix& b_ineq);
         ~Active_Set();
 

@@ -43,3 +43,9 @@ target_link_libraries(pid_test PRIVATE control_toolbox)
 
 add_executable(kalman_demo tests/kalman_demo.cpp)
 target_link_libraries(kalman_demo PRIVATE control_toolbox)
+
+add_executable(linear_drone tests/linear_drone.cpp)
+target_link_libraries(linear_drone PRIVATE control_toolbox)
+
+add_executable(h1 tests/opt_harkka1.cpp)
+target_link_libraries(h1 PRIVATE control_toolbox)

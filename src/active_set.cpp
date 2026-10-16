@@ -79,9 +79,10 @@ Status Active_Set::initialize_QP() {
         matrix A_r = A.get_row(i);
         w_residual = (A_r * x).scalar() - b.data[i];
 
-        if (std::abs(w_residual) < tol) {
+        /*if (std::abs(w_residual) < tol) {
             active_set.insert(i);
-        } else if (w_residual < -tol) {
+        } else */
+        if (w_residual < -tol) {
             //std::cout << "The problem is infeasible" << "\n";
             return Status::Infeasible;
         }
@@ -219,12 +220,14 @@ Status Active_Set::solve() {
         // calculate step size alpha
         double result = 1e9;
         int index = -1;
+        matrix Ax = A * x;
+        matrix Ap = A * p;
         for (int j = 0; j < n_const; j++) {
             if (active_set.count(j) == 0) {
-                matrix A_r = A.get_row(j);
-                double den = (A_r*p).scalar();
+                
+                double den = Ap(j, 0);
                 if (den < -tol) {
-                    double num = b.data[j] - (A_r*x).scalar();
+                    double num = b(j, 0) - Ax(j, 0);
                 
                     double frac = num/den;
                     if (frac < result) {
@@ -248,15 +251,45 @@ Status Active_Set::solve() {
         }
 
         x = x + p * alpha;
+        iters = i;
     }
     return Status::IterationCountReached;
     //std::cout << "Maximum number of iteraions reached. Solution not optimal!" << "\n";
 }
 
-Status Active_Set::reset(const matrix& b, const matrix& c_new) {
-    Status s = Status::DimensionMismatch;
-    this->b = b;
+Status Active_Set::reset(const matrix& b_new, const matrix& c_new) {
+    
+    if (this->b.rows != b_new.rows || this->c.rows != c_new.rows || this->b.columns != b_new.columns || this->c.columns != c_new.columns) {
+        return Status::DimensionMismatch;
+    }
+        
+    this->b = b_new;
     this->c = c_new;
+    active_set.clear();
+    return Status::Ok;
+}
+Status Active_Set::set_initial_guess(const matrix& x_init) {
+
+    if (this->x.rows != x_init.rows || this->x.columns != x_init.columns) {
+        return Status::DimensionMismatch;
+        }
+    this->x = x_init;
+    return Status::Ok;
+    }
+
+Status Active_Set::is_feasible() const {
+    // check if initial point is feasible
+    matrix Ax = A * x;
+    for (int i = 0; i < A.rows; i++) {
+        double res = Ax(i,0) - b(i,0);
+        if ( res < -tol) {
+            
+            return Status::Infeasible;
+        }
+    }
+    return Status::Ok;
+}
+    /*
     active_set.clear();
     for (int i = 0; i < A.rows; i++) {
         double res = (A.get_row(i) * x - b.get_row(i)).scalar();
@@ -265,7 +298,7 @@ Status Active_Set::reset(const matrix& b, const matrix& c_new) {
             s = initialize_QP();
             return s;
         }
-        if (std::abs(res) < tol) {
+        /*if (std::abs(res) < tol) {
             active_set.insert(i);
         }
     }
@@ -278,9 +311,9 @@ Status Active_Set::reset(const matrix& b, const matrix& c_new) {
     } else {
         L_M = matrix(0, 0);
     }
-    return Status::Ok;
+    return Status::Ok;*/
 
-}
+
 
 Status Active_Set::init() {
     if (A.rows != b.rows || Q.rows != c.rows || c.columns != 1 || b.columns != 1) {

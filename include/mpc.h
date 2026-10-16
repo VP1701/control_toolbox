@@ -70,6 +70,7 @@ class MPC {
         matrix P_x; // control of previous time step
         matrix H; // control
         matrix H_x; // control increment
+        matrix HWx;
         matrix c_T;
 
         matrix W_x; // cost for error/state deviation
@@ -83,6 +84,7 @@ class MPC {
         matrix b_simp;
 
         matrix prev_control;
+        matrix du_warm;
         matrix current_z;
         matrix u_past;
 
@@ -90,6 +92,7 @@ class MPC {
         matrix W_x_block;
         matrix A_qp;
         matrix b_qp;
+        int iters;
 
         matrix du;
 
@@ -154,8 +157,11 @@ class MPC {
             const matrix& du_max, const matrix& du_min, const matrix& u_max,
             const matrix& u_min, const matrix& x_max, const matrix& x_min,
             const matrix& x0, int horizon, SolverType solver_type);
-
+        
         matrix solve(const matrix& measurement, const matrix& reference);
+        
+        int return_iters() const { return iters; }
+        
         ~MPC();
 
 };
