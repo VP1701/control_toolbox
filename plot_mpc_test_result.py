@@ -18,7 +18,7 @@ ax1.set_ylabel('State Values')
 ax1.set_title('MPC System States over Time: QP vs LP')
 ax1.legend()
 ax1.grid(True)
- 
+
 # plot controls
 ax2.step(qp['k'], qp['u'], where='post', color='tab:blue', label='QP u')
 ax2.step(lp['k'], lp['u'], where='post', color='tab:orange', label='LP u')
