@@ -28,6 +28,7 @@ This project uses CMake. From the repo root:
 mkdir build && cd build
 cmake ..
 cmake --build .
+cd ..
 ```
 
 This builds `simplex_test`, `active_set_test`, and `mpc_test` into the `build/` folder. 
@@ -36,7 +37,8 @@ This builds `simplex_test`, `active_set_test`, and `mpc_test` into the `build/` 
 ### MPC solver for Linear time invariant MIMO systems
 run the code:
 ```
-./mpc_test
+.build/mpc_test
+python3 plot_mpc_test_result.py 
 ```
 
 ### Active set algorithm
