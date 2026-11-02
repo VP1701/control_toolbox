@@ -7,8 +7,10 @@
 #include <vector>
 #include <stdexcept>
 #include <cassert>
+#include "status.hpp"
 
 struct LUResult;
+struct HouseholderVectorResult;
 
 struct matrix {
     int rows;
@@ -131,6 +133,7 @@ struct matrix {
     }
 
     LUResult LU() const;
+    HouseholderVectorResult householder_vector() const;
     
     matrix chol() const {
         if (rows != columns) {
@@ -301,6 +304,12 @@ struct LUResult {
     std::vector<int> permutations;
 };
 
+struct HouseholderVectorResult {
+    matrix v;
+    double beta;
+    Status status;
+};
+
 class Matrix {
     public:
         // elementary row operations
@@ -393,6 +402,45 @@ inline LUResult matrix::LU() const {
     }
 
     return {LU, permutations};
+}
+
+inline HouseholderVectorResult matrix::householder_vector() const {
+    Status status = Status::DimensionMismatch;
+    std::size_t m = rows;
+    matrix v(m,1);
+    double beta = 0.0;
+    
+    if (columns > 1 || m == 0) {
+        return {v, beta, status};
+    }
+    
+    
+    v(0,0) = 1.0;
+    double x1 = data[0];
+    double sigma = 0.0;
+    for (std::size_t i = 1; i < m; i++) {
+        v(i,0) = data[i];
+        sigma += data[i] * data[i];
+    }
+
+    if (sigma <= 0.0 && x1 >= 0.0) {
+        beta = 0.0;
+    } else if (sigma <= 0.0 && x1 < 0.0) {
+        beta = 2.0; // in book was -2. apparently an error
+    } else {
+        double mu = std::sqrt(x1 * x1 + sigma);
+        if (x1 <= 0.0) {
+            v(0,0) = x1 - mu;
+        } else {
+            v(0,0) = -sigma/(x1 + mu);
+        }
+        double v1 = v.data[0];
+        beta = (1.0/(sigma + v1 * v1)) * 2.0 * v1 * v1;
+        v = v * (1.0 / v1);
+
+    }
+    status = Status::Ok;
+    return {v, beta, status};
 }
 
 #endif // MATRIX_H
