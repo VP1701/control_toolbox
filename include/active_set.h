@@ -3,10 +3,13 @@
 #ifndef ACTIVE_SET_H
 #define ACTIVE_SET_H
 
+#include "matrix.h"
+#include "simplex.h"
+#include "status.hpp"
+
+
 #include <iostream>
 #include <chrono>
-#include <matrix.h>
-#include "simplex.h"
 #include <vector>
 #include <set>
 
@@ -30,6 +33,7 @@ class Active_Set {
         matrix L_Q;
         matrix L_M;
         matrix z;
+        int iters = 0;
 
         // residual for checking if constraint belongs to active set
         double w_residual = 0.0;
@@ -48,11 +52,15 @@ class Active_Set {
         int max_iters = 500;
 
     public:
-        void solve_kkt(const matrix& g, const matrix& A);
-        void initialize_QP();
-        void solve();
-        void reset(const matrix& b, const matrix& c_new);
-        matrix return_solution();
+        Status solve_kkt(const matrix& g, const matrix& A);
+        Status initialize_QP();
+        Status solve();
+        Status init();
+        Status reset(const matrix& b_new, const matrix& c_new);
+        Status set_initial_guess(const matrix& x_init);
+        Status is_feasible() const;
+        matrix return_solution() const { return x; }
+        int return_iters() const { return iters; }
         Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, const matrix& b_ineq);
         ~Active_Set();
 

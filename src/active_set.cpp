@@ -20,7 +20,7 @@ matrix Active_Set::get_active_rows(const matrix& A, const std::set<int>& ws) {
     return A_W;
 };
 
-void Active_Set::initialize_QP() {
+Status Active_Set::initialize_QP() {
     // the first feasible solution can be found using the simplex method (fletcher s 162)
     delete solver;
     solver = nullptr;
@@ -61,7 +61,7 @@ void Active_Set::initialize_QP() {
 
     if (r.L1() > tol) {
         //std::cout << "No feasible starting point for the QP. Reformulate!" << "\n";
-        return;
+        return Status::Infeasible;
     } 
 
     // extract x
@@ -79,11 +79,12 @@ void Active_Set::initialize_QP() {
         matrix A_r = A.get_row(i);
         w_residual = (A_r * x).scalar() - b.data[i];
 
-        if (std::abs(w_residual) < tol) {
+        /*if (std::abs(w_residual) < tol) {
             active_set.insert(i);
-        } else if (w_residual < -tol) {
+        } else */
+        if (w_residual < -tol) {
             //std::cout << "The problem is infeasible" << "\n";
-            return;
+            return Status::Infeasible;
         }
     }
 
@@ -96,15 +97,11 @@ void Active_Set::initialize_QP() {
         L_M = matrix(0, 0);
     }
 
-    std::cout << "QP initialized \n";
+    return Status::Ok;
     
 };
 
-matrix Active_Set::return_solution() {
-    return x;
-}
-
-void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
+Status Active_Set::solve_kkt(const matrix& g, const matrix& A) {
     /*
     solves KKT system using the Schur complement method
 
@@ -149,6 +146,8 @@ void Active_Set::solve_kkt(const matrix& g, const matrix& A) {
     matrix rhs_p = (g + A.T() * lamda) * (-1.0);
     p = mops.lin_solve_chol(L_Q, rhs_p);
 
+    return Status::Ok;
+
 }
 
 
@@ -159,18 +158,22 @@ bool has_nan(const matrix& A) {
     return false;
 }
 
-void Active_Set::solve() {
-    
+Status Active_Set::solve() {
+    iters = 0;
     for (int i = 0; i < max_iters; i++) {
+        iters += 1;
         matrix A_W = get_active_rows(A, active_set);
 
-        bool is_nan = has_nan(A_W);
+        //bool is_nan = has_nan(A_W);
         // (is_nan) std::cout << "A_W has nan\n";
         matrix g = Q * x + c;
         if (active_set.empty()){
             p = mops.lin_solve_chol(L_Q, g*(-1.0));
         } else {
-            solve_kkt(g, A_W);
+            Status s = solve_kkt(g, A_W);
+            if (s != Status::Ok) {
+                return s;
+            }
         }
         
         
@@ -180,18 +183,20 @@ void Active_Set::solve() {
         // check if ||p|| = 0
 
         if (p.L2() < tol) {
-            if (active_set.empty()) return;
+            if (active_set.empty()) 
+                return Status::Ok;
             // all lamda must be non-negative
+            // Q * p + A_W^T * lambda = -g
             bool not_optimal = false;
             for (int k = 0; k < lamda.rows; k++) {
-                if (lamda.data[k] >= tol) {
+                if (lamda.data[k] > tol) {
                     not_optimal = true;
                 }
             }
 
             if (not_optimal) {
                 // blands rule for active set. pick the lowest index -> never cycle
-                double largest = -1e100;
+                
                 int index = -1;
                 for (int a = 0; a < lamda.rows * lamda.columns; a++) {
                     double val = lamda.data[a];
@@ -204,7 +209,7 @@ void Active_Set::solve() {
                 auto it = active_set.begin();
                 std::advance(it, index);
                 
-                active_set.erase(*it);
+                active_set.erase(it);
                 /*if (!active_set.empty()) {
                     matrix A_W = get_active_rows(A, active_set);
                     matrix F = mops.backslash_chol(L_Q, A_W.T());
@@ -214,19 +219,21 @@ void Active_Set::solve() {
                 }*/
                 continue;
             } else {
-                return;
+                return Status::Ok;
             }
         }
 
         // calculate step size alpha
         double result = 1e9;
         int index = -1;
+        matrix Ax = A * x;
+        matrix Ap = A * p;
         for (int j = 0; j < n_const; j++) {
             if (active_set.count(j) == 0) {
-                matrix A_r = A.get_row(j);
-                double den = (A_r*p).scalar();
+                
+                double den = Ap(j, 0);
                 if (den < -tol) {
-                    double num = b.data[j] - (A_r*x).scalar();
+                    double num = b(j, 0) - Ax(j, 0);
                 
                     double frac = num/den;
                     if (frac < result) {
@@ -251,22 +258,52 @@ void Active_Set::solve() {
 
         x = x + p * alpha;
     }
-
+    return Status::IterationCountReached;
     //std::cout << "Maximum number of iteraions reached. Solution not optimal!" << "\n";
 }
 
-void Active_Set::reset(const matrix& b, const matrix& c_new) {
-   
-    this->b = b;
+Status Active_Set::reset(const matrix& b_new, const matrix& c_new) {
+    
+    if (this->b.rows != b_new.rows || this->c.rows != c_new.rows || this->b.columns != b_new.columns || this->c.columns != c_new.columns) {
+        return Status::DimensionMismatch;
+    }
+        
+    this->b = b_new;
     this->c = c_new;
+    active_set.clear();
+    return Status::Ok;
+}
+Status Active_Set::set_initial_guess(const matrix& x_init) {
+
+    if (this->x.rows != x_init.rows || this->x.columns != x_init.columns) {
+        return Status::DimensionMismatch;
+        }
+    this->x = x_init;
+    return Status::Ok;
+    }
+
+Status Active_Set::is_feasible() const {
+    // check if initial point is feasible
+    matrix Ax = A * x;
+    for (int i = 0; i < A.rows; i++) {
+        double res = Ax(i,0) - b(i,0);
+        if ( res < -tol) {
+            
+            return Status::Infeasible;
+        }
+    }
+    return Status::Ok;
+}
+    /*
     active_set.clear();
     for (int i = 0; i < A.rows; i++) {
         double res = (A.get_row(i) * x - b.get_row(i)).scalar();
         if ( res < -tol) {
-            initialize_QP();
-            return;
+            
+            s = initialize_QP();
+            return s;
         }
-        if (std::abs(res) < tol) {
+        /*if (std::abs(res) < tol) {
             active_set.insert(i);
         }
     }
@@ -279,11 +316,28 @@ void Active_Set::reset(const matrix& b, const matrix& c_new) {
     } else {
         L_M = matrix(0, 0);
     }
+    return Status::Ok;*/
 
+
+
+Status Active_Set::init() {
+    if (A.rows != b.rows || Q.rows != c.rows || c.columns != 1 || b.columns != 1) {
+        return Status::DimensionMismatch;
+    }
+    
+    solver = nullptr;
+    Q_inv = mops.inverse(Q);
+    L_Q = Q.chol();
+
+    return Status::Ok;
 }
 
-Active_Set::Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, const matrix& b_ineq) {
-    solver = nullptr;
+Active_Set::Active_Set(const matrix& Q, const matrix& c,
+                       const matrix& A_ineq, const matrix& b_ineq)
+                       : n(Q.rows), x(mops.zeros(Q.rows, 1)), Q(Q),
+                       A(A_ineq), b(b_ineq), n_const(A.rows), c(c) {
+    
+    /*
     n = Q.rows;
     x = mops.zeros(n, 1); // solution vector
     this->Q = Q;
@@ -293,8 +347,11 @@ Active_Set::Active_Set(const matrix& Q, const matrix& c, const matrix& A_ineq, c
     n_const = A.rows;
     this->c = c;
     L_Q = Q.chol();
-
-    initialize_QP();
+    */
+    Status s = init();
+    if (s == Status::Ok)  {
+        s = initialize_QP();
+    }
 
 }
 

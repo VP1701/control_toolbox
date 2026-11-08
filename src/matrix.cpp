@@ -110,7 +110,11 @@ void Matrix::print(const matrix& A)  {
     }
 }
 
+// TODO: update these to be cache friendly later. doesnt matter for small matrices
 matrix Matrix::multiply(const matrix& A, const matrix& B) {
+    if (A.columns != B.rows) {
+            throw std::runtime_error("Dimension don't match for multiplication");
+    }
     matrix C(A.rows, B.columns);
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < B.columns; j++)  {
@@ -124,6 +128,9 @@ matrix Matrix::multiply(const matrix& A, const matrix& B) {
 
 
 matrix Matrix::addition(const matrix& A, const matrix& B) {
+    if (A.columns != B.columns || A.rows != B.rows) {
+            throw std::runtime_error("Dimension don't match for addition");
+    }
     matrix C(A.rows, A.columns);
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < A.columns; j++) {
@@ -134,6 +141,9 @@ matrix Matrix::addition(const matrix& A, const matrix& B) {
 }
 
 matrix Matrix::subtraction(const matrix& A, const matrix& B) {
+    if (A.columns != B.columns || A.rows != B.rows) {
+            throw std::runtime_error("Dimension don't match for subtraction");
+    }
     matrix C(A.rows, A.columns);
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < A.columns; j++) {

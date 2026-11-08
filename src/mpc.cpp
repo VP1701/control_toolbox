@@ -108,7 +108,6 @@ matrix MPC::construct_H(const matrix& A,const matrix& B, const matrix& C, int ho
                 //mops.print(CA);
             }
             
-            
             matrix cumsum = CA * B;
             //std::cout << "cumsum: " << "\n";
             //mops.print(cumsum);
@@ -459,11 +458,48 @@ matrix MPC::solve(const matrix& measurement, const matrix& reference) {
 
         du = du_pos - du_neg;
     } else if (solver_type == QP) {
-        matrix c = H.T() * (-1.0) * W_x_block * e;
-        qp_solver->reset(b_qp, c);
-        qp_solver->solve();
+        matrix c = HWx * e;
         
-        du = qp_solver->return_solution();
+        Status reset_status = qp_solver->reset(b_qp, c);
+        status_check(reset_status);
+        Status initial_guess_status = qp_solver->set_initial_guess(du_warm);
+        status_check(initial_guess_status);
+        Status feasible = qp_solver->is_feasible();
+        if (feasible != Status::Ok) {
+            matrix du0 = mops.zeros(nu * h, 1);
+            qp_solver->set_initial_guess(du0);
+            Status fesible_zero = qp_solver->is_feasible();
+            if (fesible_zero != Status::Ok) {
+                qp_solver->initialize_QP();
+                Status solve_result = qp_solver->solve();
+                iters = qp_solver->return_iters();
+                status_check(solve_result);
+            } else {
+                Status solve_result = qp_solver->solve();
+                iters = qp_solver->return_iters();
+                status_check(solve_result);
+            }
+            
+        } else {
+            Status solve_result = qp_solver->solve();
+            iters = qp_solver->return_iters();
+            status_check(solve_result);
+        }
+        
+        
+        matrix du_full = qp_solver->return_solution();
+        du = matrix(nu, 1);
+        for (int i = 0; i < nu; ++i) {
+            du(i, 0) = du_full(i, 0);
+        }
+        for (int i = 0; i < nu * h; ++i) {
+            if (i < nu * h - nu) {
+                du_warm(i, 0) = du_full(i + nu, 0);
+            } else {
+                du_warm(i, 0) = 0.0;
+            }
+        }
+        
     }
 
 
@@ -485,6 +521,8 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
     C_a = construct_C_a(C, B);
     nu = B.columns;
     nx = A.rows;
+    du_warm = mops.zeros(nu * h, 1);
+    
 
     P = construct_P(A_a, C_a, horizon);
     //std::cout << "P: " << "\n";
@@ -564,6 +602,7 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
         // Initialize simplex solver 
         matrix dummy_b = mops.zeros(A_simp.rows, 1);
         lp_solver = new Simplex(A_simp, dummy_b, c_T, constraint_types);
+
     } else if (solver_type == QP) {
         int u_rows = h * nu;
         matrix T_u = mops.lower_toeplitz_I(u_rows, nu);
@@ -571,16 +610,14 @@ MPC::MPC(const matrix& A, const matrix& B, const matrix& C,
         matrix W_du_block = mops.create_block_diagonal(W_du, h);
         matrix W_u_block = mops.create_block_diagonal(W_u, h);
         matrix Q = H.T() * W_x_block * H + T_u.T() * W_u_block * T_u + W_du_block;
-        
+        HWx = H.T() * (-1.0) * W_x_block;
         A_qp = A_constraint * (-1.0);
         
         matrix dummy_g = mops.zeros(u_rows, 1);
         matrix dummy_b_constraint = mops.zeros(A_constraint.rows, 1);
         qp_solver = new Active_Set(Q, dummy_g, A_qp, dummy_b_constraint);
     }
-    
 }
-
 
 MPC::~MPC() {
     if (solver_type == LP) {
