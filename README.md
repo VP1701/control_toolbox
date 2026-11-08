@@ -60,30 +60,55 @@ pip install -r requirements.txt
 ```
 
 
-## Running tests
-### MPC solver for Linear time invariant MIMO systems
-run the code:
-```
+All commands are run from the repo root. Activate the Python environment
+first (`source .venv/bin/activate`) to use the plotters. The tests write
+their CSV files to the folder they are run from.
+
+### MPC on a 2-state system, compared against MATLAB
+Runs the MPC with both the linear (LP) and quadratic (QP) cost. The plotter
+compares both against MATLAB's MPC Toolbox reference
+(`matlab_testcode/results_MATLAB.csv`) and prints the tracking error and
+control effort of each.
+```bash
 ./build/mpc_test
+python3 plot_mpc_test.py
 ```
 
-### Active set algorithm
-run the code:
-```
+### Active set QP solver
+Solves a test QP and prints the result next to MATLAB's `quadprog` solution.
+```bash
 ./build/active_set_test
 ```
 
-### Simplex algorithm
-run the code:
-```
+### Simplex LP solver
+Solves a test LP and prints the result next to MATLAB's solution.
+```bash
 ./build/simplex_test
 ```
 
-### Hover linearized drone tests
-run the code:
+### Kalman filter
+Estimates position and velocity from noisy position measurements. The plot
+is saved to `kalman_results.png`.
+```bash
+./build/kalman_demo
+python3 plot_kalman.py
 ```
+
+### PID controllers
+Runs the positional and velocity form PID controllers.
+```bash
+./build/pid_test
+python3 plot_pid_test.py
+```
+
+### Hover-linearized drone (MPC)
+Runs six checks on the drone model: hover hold, altitude step, lateral step,
+mid-run lateral step and trajectory tracking through gates. Prints PASS/FAIL
+for each check and the solve times.
+```bash
 ./build/linear_drone
-python ./plot_quad_trajectory.py --file results_quad_trajectory.csv
+python3 plot_quad_test.py              # scenarios 1-4, add --save for PNGs
+python3 plot_quad_trajectory.py        # trajectory tracking, add --save for a PNG
 ```
 
 ## Roadmap and future plans

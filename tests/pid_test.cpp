@@ -1,15 +1,16 @@
-// test_pid_comparison.cpp
-// Runs the same plant/reference scenario as test_mpc_comparison.cpp, but
+// pid_test.cpp
+// Runs the same plant/reference scenario as mpc_test.cpp, but
 // controlled with PidVelocity (incremental form) and PidPositional
 // (positional form w/ derivative filter + anti-windup) instead of MPC.
 // Results are saved to CSV so they can be plotted/compared against
 // results_LP.csv / results_QP.csv from the MPC test.
 
+
+// TODO: tune the PID controllers properly. current tunings made just for testing if the algorithm works
 #include <iostream>
 #include <fstream>
 #include <chrono>
 #include <algorithm>
-#include <filesystem>
 #include "matrix.h"
 #include "pid.h"
 
@@ -126,17 +127,14 @@ int main() {
         double u_low = -25.0;
         double u_high = 25.0;
 
-        const std::string out_dir = "control_toolbox/test_results";
-        std::filesystem::create_directories(out_dir);
-
         std::cout << "=== Building PidVelocity controller ===\n";
         PidVelocity vel_controller(
             /*K_p=*/0.5, /*K_d=*/0.0, /*K_i=*/0.05, /*h=*/h,
             ControlMethod::Tustin, /*antiwindup=*/true, u_low, u_high);
         std::cout << "Running PidVelocity simulation...\n";
         run_simulation_velocity(vel_controller, A, B, x0, sim_steps, u_low, u_high,
-                                (out_dir + "/results_PID_velocity.csv").c_str());
-        std::cout << "PidVelocity done. Results saved to " << out_dir << "/results_PID_velocity.csv\n\n";
+                                "results_PID_velocity.csv");
+        std::cout << "PidVelocity done. Results saved to results_PID_velocity.csv\n\n";
 
         std::cout << "=== Building PidPositional controller ===\n";
         PidPositional pos_controller(
@@ -144,11 +142,10 @@ int main() {
             u_low, u_high, /*T_f=*/1.0, /*T_aw=*/1.0, /*beta=*/1.0);
         std::cout << "Running PidPositional simulation...\n";
         run_simulation_positional(pos_controller, A, B, x0, sim_steps,
-                                (out_dir + "/results_PID_positional.csv").c_str());
-        std::cout << "PidPositional done. Results saved to " << out_dir << "/results_PID_positional.csv\n\n";
+                                "results_PID_positional.csv");
+        std::cout << "PidPositional done. Results saved to results_PID_positional.csv\n\n";
 
-        std::cout << "Both PID simulations complete. Compare " << out_dir << "/results_PID_velocity.csv, "
-                << out_dir << "/results_PID_positional.csv and your MPC results.\n";
+        std::cout << "Both PID simulations complete.\n";
         return 0;
     } catch (const std::exception& e){
             std::cerr << "EXCEPTION: " << e.what() << "\n";
