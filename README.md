@@ -8,7 +8,7 @@ robust and efficient enough to be used in real-world aplications.
 - Model Predictive Control (MPC): Formulated for Linear TIme-invariant (LTI) MIMO systems. Supports Linear and Quadratic cost functions.
 - Custom optimization algorithms
     - Simplex algorithm:
-    - Active Set algortihm: 
+    - Active Set algorithm: 
 - PID control: Both algorithm support antiwindup
     - Positional PID-control algorithm
     - Velocity form PID-control algorithm
@@ -19,7 +19,7 @@ The C++ implementations in this library are verifies against MATLAB. Simplex- an
 and gave same results. The MPC-algortihm was also tested against matlab and gave almost identical results. 
 
 MPC-algortihm was tested on a 2 state integrator system and as seen below the results are almost identical to matlabs with the QP-cost
-![MPC Comparison](documentation\images\mpc_comparison.png)
+![MPC Comparison](documentation/images/mpc_comparison.png)
 
 
 After MPc validation against matlab the MPC has been tested on a 8 state drone model which was linearized around hover. 
@@ -35,7 +35,7 @@ Parameters used are illustrative and not identified from a real drone and the st
 
 The MPC had horizon of 20, tilt was limited to +-20 degrees, tilt rate to 0.2 rad/s and thrust between 0.3g and 1.8 g. The trajectory was designed to be flown at 2 m/s. Results on the simulation can be seen below.
 
-![MPC on drone trajectory](documentation\images\linear_drone_trajectory_track.png)
+![MPC on drone trajectory](documentation/images/linear_drone_trajectory_track.png)
 
 The test were done on the exact same plant which the MPC used and no disturbances were added. In reality there would be model mismatch and noise. The trajectory starts at the full 2 m/s and drone starts at 0 m/s which causes some deviation from trajectory at the first segment before first gate. The solve time stays under 10 ms on my laptop with ryzen 5 4500U. In the future this will also be tested on the jetson with the same goal of worst case solve time being under 10 ms.
 
