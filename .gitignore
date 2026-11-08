@@ -1,6 +1,7 @@
 *.exe
 *.csv
 *.asv
+/*.png
 .vscode/
 build/
 .venv/
