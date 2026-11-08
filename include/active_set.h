@@ -33,7 +33,7 @@ class Active_Set {
         matrix L_Q;
         matrix L_M;
         matrix z;
-        int iters;
+        int iters = 0;
 
         // residual for checking if constraint belongs to active set
         double w_residual = 0.0;

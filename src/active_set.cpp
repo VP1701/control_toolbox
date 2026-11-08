@@ -159,17 +159,21 @@ bool has_nan(const matrix& A) {
 }
 
 Status Active_Set::solve() {
-    
+    iters = 0;
     for (int i = 0; i < max_iters; i++) {
+        iters += 1;
         matrix A_W = get_active_rows(A, active_set);
 
-        bool is_nan = has_nan(A_W);
+        //bool is_nan = has_nan(A_W);
         // (is_nan) std::cout << "A_W has nan\n";
         matrix g = Q * x + c;
         if (active_set.empty()){
             p = mops.lin_solve_chol(L_Q, g*(-1.0));
         } else {
-            solve_kkt(g, A_W);
+            Status s = solve_kkt(g, A_W);
+            if (s != Status::Ok) {
+                return s;
+            }
         }
         
         
@@ -179,18 +183,20 @@ Status Active_Set::solve() {
         // check if ||p|| = 0
 
         if (p.L2() < tol) {
-            if (active_set.empty()) return Status::Ok;
+            if (active_set.empty()) 
+                return Status::Ok;
             // all lamda must be non-negative
+            // Q * p + A_W^T * lambda = -g
             bool not_optimal = false;
             for (int k = 0; k < lamda.rows; k++) {
-                if (lamda.data[k] >= tol) {
+                if (lamda.data[k] > tol) {
                     not_optimal = true;
                 }
             }
 
             if (not_optimal) {
                 // blands rule for active set. pick the lowest index -> never cycle
-                double largest = -1e100;
+                
                 int index = -1;
                 for (int a = 0; a < lamda.rows * lamda.columns; a++) {
                     double val = lamda.data[a];
@@ -203,7 +209,7 @@ Status Active_Set::solve() {
                 auto it = active_set.begin();
                 std::advance(it, index);
                 
-                active_set.erase(*it);
+                active_set.erase(it);
                 /*if (!active_set.empty()) {
                     matrix A_W = get_active_rows(A, active_set);
                     matrix F = mops.backslash_chol(L_Q, A_W.T());
@@ -213,7 +219,7 @@ Status Active_Set::solve() {
                 }*/
                 continue;
             } else {
-                return Status::Ok;;
+                return Status::Ok;
             }
         }
 
@@ -251,7 +257,6 @@ Status Active_Set::solve() {
         }
 
         x = x + p * alpha;
-        iters = i;
     }
     return Status::IterationCountReached;
     //std::cout << "Maximum number of iteraions reached. Solution not optimal!" << "\n";
